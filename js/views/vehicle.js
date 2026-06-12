@@ -12,7 +12,8 @@ import {
 
 export async function renderVehicle(root, id, tab = 'ot') {
   const [v, cost] = await Promise.all([db.getVehicle(id), db.getVehicleCost(id)]);
-  const meta = [v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
+  const brandModel = [v.brand, v.model].filter(Boolean).join(' ');
+  const meta = [brandModel, v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
 
   const tabs = [
     ['ot', 'OT'],

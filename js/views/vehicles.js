@@ -16,7 +16,8 @@ function vehicleCard(v, deadlines) {
       ? `<span class="warn-chip soon">🕒 ${soon} échéance${soon > 1 ? 's' : ''} proche${soon > 1 ? 's' : ''}</span>`
       : '';
 
-  const meta = [v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
+  const brandModel = [v.brand, v.model].filter(Boolean).join(' ');
+  const meta = [brandModel, v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
 
   return `
     <a class="card vehicle-card" href="#/vehicle/${v.id}/ot">

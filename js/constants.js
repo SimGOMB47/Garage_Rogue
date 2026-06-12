@@ -34,11 +34,13 @@ export const label = (list, value) =>
 
 export const vehicleFields = [
   { name: 'name',   label: 'Nom', required: true, placeholder: 'ex : Clio de Papa' },
-  { name: 'type',   label: 'Type', datalist: ['Voiture', 'Moto', 'Tracteur', 'Utilitaire', 'Remorque', 'Quad'] },
+  { name: 'brand',  label: 'Marque', placeholder: 'ex : Renault' },
+  { name: 'model',  label: 'Modèle', placeholder: 'ex : Clio 2' },
   { name: 'year',   label: 'Année', type: 'number', step: '1' },
   { name: 'plate',  label: 'Immatriculation', placeholder: 'AB-123-CD' },
   { name: 'km',     label: 'Kilométrage', type: 'number', step: '1', required: true },
   { name: 'status', label: 'Statut', type: 'select', options: VEHICLE_STATUS },
+  { name: 'type',   label: 'Type', datalist: ['Voiture', 'Moto', 'Tracteur', 'Utilitaire', 'Remorque', 'Quad'] },
 ];
 
 export const otFields = [
