@@ -1,0 +1,268 @@
+/* ════════════════════════════════════════════════════════════
+   Garage de Rogué — thème sombre atelier, mobile d'abord
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #17191B;          /* anthracite */
+  --panel: #1F2226;
+  --panel-2: #272B30;
+  --border: #32373D;
+  --text: #E8E6E3;
+  --muted: #9BA0A6;
+  --accent: #F2B705;      /* jaune atelier */
+  --accent-dark: #C79704;
+  --green: #4CAF7D;
+  --orange: #E8833A;
+  --red: #E05252;
+  --blue: #4FA3D9;
+  --violet: #9B7ED9;
+  --radius: 14px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { max-width: 640px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
+
+h1 { font-size: 1.2rem; margin: 0; }
+h2 { font-size: 1rem; margin: 0 0 10px; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+a { color: inherit; text-decoration: none; }
+.accent { color: var(--accent); }
+.muted { color: var(--muted); font-size: .88rem; }
+.grow { flex: 1; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cost { color: var(--accent); font-weight: 700; }
+.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+
+/* ── Barre du haut ─────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
+  background: rgba(23, 25, 27, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.icon-btn {
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  width: 38px; height: 38px; font-size: 1.05rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.icon-btn:active { background: var(--border); }
+
+/* ── Contenu / cartes ──────────────────────────────────────── */
+.page { padding: 14px 14px calc(96px + var(--safe-bottom)); display: grid; gap: 10px; align-content: start; }
+
+.card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+a.card:active { background: var(--panel-2); }
+.card .row + .row, .card .row + div, .card div + .row { margin-top: 6px; }
+
+.vehicle-summary {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.vehicle-summary .muted { width: 100%; }
+
+/* ── Badges & puces ────────────────────────────────────────── */
+.badge, .chip {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .02em;
+  white-space: nowrap;
+}
+.badge.st-en_service   { background: rgba(76,175,125,.15);  color: var(--green); }
+.badge.st-maintenance  { background: rgba(242,183,5,.15);   color: var(--accent); }
+.badge.st-hors_service { background: rgba(224,82,82,.15);   color: var(--red); }
+
+.badge.type-preventif   { background: rgba(79,163,217,.15); color: var(--blue); }
+.badge.type-correctif   { background: rgba(232,131,58,.15); color: var(--orange); }
+.badge.type-amelioratif { background: rgba(155,126,217,.15); color: var(--violet); }
+
+.chip.st-ouvert   { background: rgba(232,131,58,.15); color: var(--orange); }
+.chip.st-en_cours { background: rgba(242,183,5,.15);  color: var(--accent); }
+.chip.st-cloture  { background: rgba(76,175,125,.15); color: var(--green); }
+
+.warn-chip { font-size: .78rem; font-weight: 700; }
+.warn-chip.late { color: var(--red); }
+.warn-chip.soon { color: var(--orange); }
+
+/* ── Onglets ───────────────────────────────────────────────── */
+.tabs {
+  display: flex; position: sticky; top: 0; z-index: 9;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.tabs a {
+  flex: 1; text-align: center; padding: 12px 4px;
+  font-size: .85rem; font-weight: 600; color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+.tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Échéances ─────────────────────────────────────────────── */
+.due-item { border-left: 4px solid var(--green); width: 100%; text-align: left; cursor: pointer; }
+.due-item.due-soon { border-left-color: var(--orange); }
+.due-item.due-late { border-left-color: var(--red); }
+.due-item .due-when { font-size: .85rem; margin-top: 4px; }
+.due-ok   .due-when { color: var(--green); }
+.due-soon .due-when { color: var(--orange); }
+.due-late .due-when { color: var(--red); }
+
+/* ── Stock ─────────────────────────────────────────────────── */
+.stock-row { display: flex; align-items: center; gap: 8px; }
+.qty-btn {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: var(--panel-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 1.1rem; cursor: pointer;
+}
+.qty { min-width: 30px; text-align: center; font-weight: 700; }
+
+/* ── Pièces d'un OT ────────────────────────────────────────── */
+.part-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.part-list li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.part-del {
+  background: none; border: none; color: var(--red);
+  font-size: 1rem; cursor: pointer; padding: 4px 8px;
+}
+.part-form { display: flex; gap: 6px; }
+.part-form input[name="name"] { flex: 2; min-width: 0; }
+.part-form input[name="qty"], .part-form input[name="price"] { flex: 1; min-width: 0; }
+.part-total { text-align: right; font-weight: 700; margin-top: 8px; }
+
+/* ── Photos ────────────────────────────────────────────────── */
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.thumb { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+.thumb-del {
+  position: absolute; top: 4px; right: 4px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0,0,0,.65); color: #fff; border: none;
+  font-size: .8rem; cursor: pointer;
+}
+.photo-add {
+  aspect-ratio: 1; border: 2px dashed var(--border); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--muted); font-size: .78rem; gap: 4px; cursor: pointer;
+}
+.photo-add span:first-child { font-size: 1.4rem; color: var(--accent); }
+.photo-add input { display: none; }
+
+.lightbox {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0,0,0,.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; cursor: zoom-out;
+}
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+
+/* ── Boutons & formulaires ─────────────────────────────────── */
+.btn {
+  background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 18px; font-size: .95rem; font-weight: 600;
+  cursor: pointer; text-align: center;
+}
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #17191B; }
+.btn-primary:active { background: var(--accent-dark); }
+.btn-danger { background: none; border: none; color: var(--red); padding: 10px; font-size: .9rem; cursor: pointer; }
+.link { background: none; border: none; color: var(--accent); font-size: .9rem; cursor: pointer; padding: 10px; }
+
+label { display: block; font-size: .82rem; color: var(--muted); font-weight: 600; }
+input, select, textarea {
+  display: block; width: 100%; margin-top: 5px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 12px; font-size: 1rem; font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.part-form input { margin-top: 0; }
+.part-form button { flex-shrink: 0; }
+
+/* ── Bouton flottant "+" ───────────────────────────────────── */
+.fab {
+  position: fixed; right: 18px; bottom: calc(18px + var(--safe-bottom)); z-index: 20;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--accent); color: #17191B; border: none;
+  font-size: 2rem; line-height: 1; font-weight: 600;
+  box-shadow: 0 6px 18px rgba(0,0,0,.45); cursor: pointer;
+}
+.fab:active { background: var(--accent-dark); }
+
+/* ── Modales (tiroir qui monte depuis le bas) ──────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.modal {
+  width: 100%; max-width: 640px;
+  max-height: 88vh; max-height: 88dvh;
+  overflow-y: auto;
+  background: var(--panel);
+  border-radius: 18px 18px 0 0;
+  border-top: 1px solid var(--border);
+  padding: 18px 18px calc(18px + var(--safe-bottom));
+  animation: slide-up .18s ease-out;
+}
+@keyframes slide-up { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+.modal h2 { margin-bottom: 14px; }
+.modal-body { display: grid; gap: 12px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn { flex: 1; }
+.modal .btn-danger { width: 100%; margin-top: 14px; }
+
+/* ── Toasts (messages furtifs) ─────────────────────────────── */
+#toasts {
+  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 70; display: grid; gap: 8px; width: min(92vw, 420px);
+}
+.toast {
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  color: var(--text); padding: 12px 14px; border-radius: 10px;
+  font-size: .9rem; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  animation: slide-up .15s ease-out;
+}
+.toast.error { border-left-color: var(--red); }
+
+/* ── Écrans centrés (connexion, erreurs) ───────────────────── */
+.center-screen {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center;
+}
+.center-screen .card { width: 100%; max-width: 380px; text-align: left; display: grid; gap: 12px; }
+.auth .logo { font-size: 3rem; }
+.auth h1 { font-size: 1.6rem; }
+
+/* ── Écrans plus larges (ordinateur) ───────────────────────── */
+@media (min-width: 700px) {
+  .overlay { align-items: center; padding: 24px; }
+  .modal { border-radius: 18px; max-width: 480px; }
+}

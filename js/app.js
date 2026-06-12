@@ -1,0 +1,87 @@
+// ── Point d'entrée : session, navigation, synchro temps réel ────
+
+import { SUPABASE_KEY } from './config.js';
+import { supabase, isMember, onAnyChange } from './db.js';
+import { renderLogin, renderNotMember } from './auth.js';
+import { esc, isModalOpen } from './ui.js';
+import { renderVehicles } from './views/vehicles.js';
+import { renderVehicle } from './views/vehicle.js';
+import { renderWorkOrder } from './views/workorder.js';
+
+const app = document.getElementById('app');
+
+let session = null;     // session Supabase (null = pas connecté)
+let member = false;     // le compte est-il dans garage_members ?
+let currentUid;         // pour ignorer les événements de session redondants
+
+// Affiche l'écran correspondant à l'adresse (#/..., navigation "hash")
+async function route() {
+  if (SUPABASE_KEY.includes('COLLE_TA_CLE')) {
+    app.innerHTML = `
+      <div class="center-screen">
+        <h1>⚙️ Configuration requise</h1>
+        <p>Ouvre <code>js/config.js</code> et colle ta clé publique Supabase<br>
+        (<code>sb_publishable_…</code>), puis recharge la page.</p>
+      </div>`;
+    return;
+  }
+  if (!session) return renderLogin(app);
+  if (!member) return renderNotMember(app, session.user.email);
+
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  try {
+    if (parts[0] === 'vehicle' && parts[1]) await renderVehicle(app, parts[1], parts[2]);
+    else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1]);
+    else await renderVehicles(app);
+  } catch (e) {
+    console.error(e);
+    app.innerHTML = `
+      <div class="center-screen">
+        <h1>Oups…</h1>
+        <p class="muted">${esc(e.message)}</p>
+        <a class="btn btn-primary" href="#/">Retour à l'accueil</a>
+      </div>`;
+  }
+}
+
+window.addEventListener('hashchange', route);
+
+// ── Synchro temps réel ──────────────────────────────────────────
+// Quand la base change (ex : ton père ajoute un OT), on redessine
+// l'écran courant. Si une modale est ouverte (saisie en cours), on
+// attend qu'elle se ferme pour ne pas perdre ce qui est tapé.
+let refreshTimer;
+let pendingRefresh = false;
+
+function scheduleRefresh() {
+  if (isModalOpen()) { pendingRefresh = true; return; }
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(route, 400);
+}
+
+window.addEventListener('modal-closed', () => {
+  if (pendingRefresh) { pendingRefresh = false; scheduleRefresh(); }
+});
+
+// ── Session ─────────────────────────────────────────────────────
+async function applySession(s) {
+  const uid = s?.user?.id ?? null;
+  if (uid === currentUid) return; // rien de nouveau (ex : simple refresh de jeton)
+  currentUid = uid;
+  session = s;
+  member = s ? await isMember() : false;
+  route();
+}
+
+(async function init() {
+  const { data: { session: s } } = await supabase.auth.getSession();
+  await applySession(s);
+
+  // setTimeout : recommandé par Supabase pour éviter un blocage
+  // quand on fait des requêtes depuis ce rappel.
+  supabase.auth.onAuthStateChange((_event, s) => {
+    setTimeout(() => applySession(s), 0);
+  });
+
+  onAnyChange(scheduleRefresh);
+})();

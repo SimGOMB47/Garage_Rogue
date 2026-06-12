@@ -1,0 +1,199 @@
+// ── Accès aux données Supabase ──────────────────────────────────
+// Toutes les lectures/écritures de l'application passent par ici.
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Supabase renvoie { data, error } : ce petit utilitaire transforme
+// l'erreur éventuelle en exception, que les écrans affichent en toast.
+function check({ data, error }) {
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ── Membres ─────────────────────────────────────────────────────
+export async function isMember() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const rows = check(
+    await supabase.from('garage_members').select('user_id').eq('user_id', user.id)
+  );
+  return rows.length > 0;
+}
+
+// ── Véhicules ───────────────────────────────────────────────────
+export async function listVehicles() {
+  const vehicles = check(await supabase.from('vehicles').select('*').order('name'));
+  const costs = check(await supabase.from('vehicle_costs').select('*'));
+  const costMap = Object.fromEntries(costs.map(c => [c.vehicle_id, Number(c.total_cost)]));
+  return vehicles.map(v => ({ ...v, total_cost: costMap[v.id] ?? 0 }));
+}
+
+export async function getVehicle(id) {
+  return check(await supabase.from('vehicles').select('*').eq('id', id).single());
+}
+
+export async function getVehicleCost(id) {
+  const rows = check(
+    await supabase.from('vehicle_costs').select('total_cost').eq('vehicle_id', id)
+  );
+  return rows.length ? Number(rows[0].total_cost) : 0;
+}
+
+export async function saveVehicle(values, id = null) {
+  if (id) return check(await supabase.from('vehicles').update(values).eq('id', id).select().single());
+  return check(await supabase.from('vehicles').insert(values).select().single());
+}
+
+export async function deleteVehicle(id) {
+  // Supprime d'abord les fichiers photos de tous ses OT dans le Storage
+  // (la base, elle, se nettoie toute seule grâce à "on delete cascade").
+  const photos = check(
+    await supabase.from('work_order_photos')
+      .select('path, work_orders!inner(vehicle_id)')
+      .eq('work_orders.vehicle_id', id)
+  );
+  if (photos.length) {
+    await supabase.storage.from('photos').remove(photos.map(p => p.path));
+  }
+  check(await supabase.from('vehicles').delete().eq('id', id));
+}
+
+// ── Ordres de travail ───────────────────────────────────────────
+export async function listWorkOrders(vehicleId) {
+  return check(
+    await supabase.from('work_orders')
+      .select('*, work_order_parts(qty, price)')
+      .eq('vehicle_id', vehicleId)
+      .order('date', { ascending: false })
+  );
+}
+
+export async function getWorkOrder(id) {
+  return check(
+    await supabase.from('work_orders')
+      .select('*, work_order_parts(*), work_order_photos(*)')
+      .eq('id', id)
+      .single()
+  );
+}
+
+export async function saveWorkOrder(values, id = null) {
+  if (id) return check(await supabase.from('work_orders').update(values).eq('id', id).select().single());
+  return check(await supabase.from('work_orders').insert(values).select().single());
+}
+
+export async function deleteWorkOrder(id) {
+  const photos = check(
+    await supabase.from('work_order_photos').select('path').eq('work_order_id', id)
+  );
+  if (photos.length) {
+    await supabase.storage.from('photos').remove(photos.map(p => p.path));
+  }
+  check(await supabase.from('work_orders').delete().eq('id', id));
+}
+
+// ── Pièces d'un ordre de travail ────────────────────────────────
+export async function addPart(workOrderId, values) {
+  check(await supabase.from('work_order_parts').insert({ ...values, work_order_id: workOrderId }));
+}
+
+export async function deletePart(id) {
+  check(await supabase.from('work_order_parts').delete().eq('id', id));
+}
+
+// ── Photos ──────────────────────────────────────────────────────
+export async function uploadPhotos(workOrderId, files) {
+  for (const file of files) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${workOrderId}/${crypto.randomUUID()}.${ext}`;
+    check(await supabase.storage.from('photos').upload(path, file));
+    check(await supabase.from('work_order_photos').insert({ work_order_id: workOrderId, path }));
+  }
+}
+
+// Le bucket est privé : on génère des liens signés temporaires (1 h)
+export async function photoUrls(photos) {
+  if (!photos.length) return {};
+  const data = check(
+    await supabase.storage.from('photos').createSignedUrls(photos.map(p => p.path), 3600)
+  );
+  const map = {};
+  data.forEach((d, i) => { map[photos[i].path] = d.signedUrl; });
+  return map;
+}
+
+export async function deletePhoto(photo) {
+  await supabase.storage.from('photos').remove([photo.path]);
+  check(await supabase.from('work_order_photos').delete().eq('id', photo.id));
+}
+
+// ── Échéances ───────────────────────────────────────────────────
+export async function listDeadlines(vehicleId) {
+  return check(
+    await supabase.from('deadlines').select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('created_at')
+  );
+}
+
+export async function listAllDeadlines() {
+  return check(await supabase.from('deadlines').select('vehicle_id, due_km, due_date'));
+}
+
+export async function saveDeadline(values, id = null) {
+  if (id) check(await supabase.from('deadlines').update(values).eq('id', id));
+  else check(await supabase.from('deadlines').insert(values));
+}
+
+export async function deleteDeadline(id) {
+  check(await supabase.from('deadlines').delete().eq('id', id));
+}
+
+// ── Stock ───────────────────────────────────────────────────────
+export async function listStock(vehicleId) {
+  return check(
+    await supabase.from('stock_parts').select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('name')
+  );
+}
+
+export async function saveStockPart(values, id = null) {
+  if (id) check(await supabase.from('stock_parts').update(values).eq('id', id));
+  else check(await supabase.from('stock_parts').insert(values));
+}
+
+export async function deleteStockPart(id) {
+  check(await supabase.from('stock_parts').delete().eq('id', id));
+}
+
+// ── Fiche technique ─────────────────────────────────────────────
+export async function listSpecs(vehicleId) {
+  return check(
+    await supabase.from('vehicle_specs').select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('created_at')
+  );
+}
+
+export async function saveSpec(values, id = null) {
+  if (id) check(await supabase.from('vehicle_specs').update(values).eq('id', id));
+  else check(await supabase.from('vehicle_specs').insert(values));
+}
+
+export async function deleteSpec(id) {
+  check(await supabase.from('vehicle_specs').delete().eq('id', id));
+}
+
+// ── Synchronisation temps réel ──────────────────────────────────
+// Appelle "callback" dès qu'une ligne change dans la base
+// (modification faite par l'autre personne, ou par soi-même).
+export function onAnyChange(callback) {
+  supabase
+    .channel('garage-sync')
+    .on('postgres_changes', { event: '*', schema: 'public' }, callback)
+    .subscribe();
+}
