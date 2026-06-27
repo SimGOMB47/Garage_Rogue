@@ -5,7 +5,7 @@
 // sans réseau, on sert la copie en cache. Les requêtes vers Supabase
 // (données, photos, connexion) ne sont jamais mises en cache.
 
-const CACHE = 'garage-rogue-v2';
+const CACHE = 'garage-rogue-v3';
 
 // L'interface de l'application, mise en cache dès l'installation
 const PRECACHE = [
@@ -19,9 +19,15 @@ const PRECACHE = [
   './js/ui.js',
   './js/auth.js',
   './js/app.js',
+  './js/update.js',
+  './js/components/nav.js',
+  './js/views/home.js',
   './js/views/vehicles.js',
   './js/views/vehicle.js',
   './js/views/workorder.js',
+  './js/views/activity.js',
+  './js/views/planning.js',
+  './js/views/dashboard.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm',

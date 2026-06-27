@@ -71,6 +71,15 @@ export async function listWorkOrders(vehicleId) {
   );
 }
 
+// Toutes les activités, tous véhicules confondus (pour l'accueil et le planning)
+export async function listAllWorkOrders() {
+  return check(
+    await supabase.from('work_orders')
+      .select('id, vehicle_id, subsystem, type, date, status')
+      .order('date')
+  );
+}
+
 export async function getWorkOrder(id) {
   return check(
     await supabase.from('work_orders')

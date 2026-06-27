@@ -4,9 +4,14 @@ import { SUPABASE_KEY } from './config.js';
 import { supabase, isMember, onAnyChange } from './db.js';
 import { renderLogin, renderNotMember } from './auth.js';
 import { esc, isModalOpen } from './ui.js';
+import { setupAutoUpdate } from './update.js';
+import { renderHome } from './views/home.js';
 import { renderVehicles } from './views/vehicles.js';
 import { renderVehicle } from './views/vehicle.js';
 import { renderWorkOrder } from './views/workorder.js';
+import { renderActivityWizard } from './views/activity.js';
+import { renderPlanning } from './views/planning.js';
+import { renderDashboard } from './views/dashboard.js';
 
 const app = document.getElementById('app');
 
@@ -32,7 +37,11 @@ async function route() {
   try {
     if (parts[0] === 'vehicle' && parts[1]) await renderVehicle(app, parts[1], parts[2]);
     else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1]);
-    else await renderVehicles(app);
+    else if (parts[0] === 'vehicles') await renderVehicles(app);
+    else if (parts[0] === 'new') await renderActivityWizard(app);
+    else if (parts[0] === 'planning') await renderPlanning(app);
+    else if (parts[0] === 'dashboard') await renderDashboard(app);
+    else await renderHome(app);
   } catch (e) {
     console.error(e);
     app.innerHTML = `
@@ -74,6 +83,8 @@ async function applySession(s) {
 }
 
 (async function init() {
+  setupAutoUpdate(); // garde l'app à jour sur iPhone (PWA)
+
   const { data: { session: s } } = await supabase.auth.getSession();
   await applySession(s);
 

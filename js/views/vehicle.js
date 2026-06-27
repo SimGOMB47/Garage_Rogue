@@ -24,7 +24,7 @@ export async function renderVehicle(root, id, tab = 'ot') {
 
   root.innerHTML = `
     <header class="topbar">
-      <a class="icon-btn" href="#/" title="Retour">←</a>
+      <a class="icon-btn" href="#/vehicles" title="Retour">←</a>
       <h1 class="grow">${esc(v.name)}</h1>
       <button class="icon-btn" id="edit-vehicle" title="Modifier le véhicule">✎</button>
     </header>
@@ -56,7 +56,7 @@ export async function renderVehicle(root, id, tab = 'ot') {
       if (!ok) return;
       await db.deleteVehicle(id);
       toast('Véhicule supprimé');
-      location.hash = '#/';
+      location.hash = '#/vehicles';
     } else if (res) {
       await db.saveVehicle(res, id);
       toast('Véhicule enregistré');
