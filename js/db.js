@@ -75,7 +75,7 @@ export async function listWorkOrders(vehicleId) {
 export async function listAllWorkOrders() {
   return check(
     await supabase.from('work_orders')
-      .select('id, vehicle_id, subsystem, type, date, status')
+      .select('id, vehicle_id, subsystem, type, date, status, description')
       .order('date')
   );
 }
@@ -149,7 +149,9 @@ export async function listDeadlines(vehicleId) {
 }
 
 export async function listAllDeadlines() {
-  return check(await supabase.from('deadlines').select('vehicle_id, due_km, due_date'));
+  return check(
+    await supabase.from('deadlines').select('id, vehicle_id, title, due_km, due_date, notes')
+  );
 }
 
 export async function saveDeadline(values, id = null) {

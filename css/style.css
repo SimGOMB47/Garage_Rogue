@@ -358,6 +358,39 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   min-width: 110px; flex-shrink: 0;
 }
 
+/* ── Planning ──────────────────────────────────────────────── */
+.plan-h { display: flex; align-items: center; gap: 8px; margin: 8px 0 0; }
+.plan-count {
+  background: var(--panel-2); color: var(--muted);
+  border-radius: 999px; padding: 1px 9px; font-size: .78rem;
+}
+.plan-item.plan-late { border-left: 4px solid var(--red); }
+
+/* Ligne de véhicule dépliable */
+.plan-vehicle summary {
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; list-style: none;          /* cache le triangle natif */
+}
+.plan-vehicle summary::-webkit-details-marker { display: none; }
+.plan-vehicle .plan-arrow { color: var(--muted); transition: transform .18s ease; }
+.plan-vehicle[open] .plan-arrow { transform: rotate(180deg); }
+.plan-vehicle[open] summary { border-color: var(--accent); }
+.plan-ots { display: grid; gap: 8px; padding: 8px 0 4px 12px; }
+.plan-ots .card { border-left: 3px solid var(--border); }
+.plan-ots .plan-late { border-left: 4px solid var(--red); }
+
+/* Bouton d'action du cycle de vie d'une activité */
+.st-action { width: 100%; margin-top: 12px; }
+.btn-done { background: var(--green); border-color: var(--green); color: #17191B; }
+.btn-done:active { background: #3d9166; }
+.done-banner {
+  margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+  background: rgba(76,175,125,.12); color: var(--green);
+  font-size: .88rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.done-banner .link { padding: 0 4px; }
+
 /* ── Écrans plus larges (ordinateur) ───────────────────────── */
 @media (min-width: 700px) {
   .overlay { align-items: center; padding: 24px; }

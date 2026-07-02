@@ -35,6 +35,14 @@ export async function renderWorkOrder(root, id, mode) {
         </div>
         ${ot.subsystem ? `<div><strong>${esc(ot.subsystem)}</strong></div>` : ''}
         ${ot.description ? `<div style="white-space:pre-wrap">${esc(ot.description)}</div>` : ''}
+        ${isNew ? '' : ot.status === 'ouvert' ? `
+          <button class="btn btn-primary st-action" id="st-action">▶ Commencer l’activité</button>`
+        : ot.status === 'en_cours' ? `
+          <button class="btn btn-done st-action" id="st-action">✓ Terminer l’activité</button>`
+        : `
+          <div class="done-banner">✅ Activité terminée — rangée dans l’historique du véhicule
+            <button class="link" id="reopen">Rouvrir</button>
+          </div>`}
       </section>
 
       <section class="card">
@@ -85,6 +93,32 @@ export async function renderWorkOrder(root, id, mode) {
       toast('Activité créée 🎉');
       location.hash = '#/';
     };
+  }
+
+  // Bouton d'action unique : Ouvert → Commencer → Terminer → historique
+  const stBtn = $('#st-action');
+  if (stBtn) {
+    stBtn.onclick = safe(async () => {
+      const next = ot.status === 'ouvert' ? 'en_cours' : 'cloture';
+      await db.saveWorkOrder({ status: next }, id);
+      if (next === 'cloture') {
+        toast('Activité terminée ✅ — enregistrée dans l’historique');
+        location.hash = `#/vehicle/${ot.vehicle_id}/ot`;  // montre l'historique
+      } else {
+        toast('Activité en cours 🔧');
+        rerender();
+      }
+    });
+  }
+
+  // Rouvrir une activité terminée (en cas d'erreur de manipulation)
+  const reopenBtn = $('#reopen');
+  if (reopenBtn) {
+    reopenBtn.onclick = safe(async () => {
+      await db.saveWorkOrder({ status: 'ouvert' }, id);
+      toast('Activité rouverte');
+      rerender();
+    });
   }
 
   // Modifier / supprimer l'OT
