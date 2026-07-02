@@ -5,7 +5,7 @@
 
 import * as db from '../db.js';
 import { OT_TYPES, SUBSYSTEMS, label } from '../constants.js';
-import { $, $$, esc, fmtKm, fmtDate, todayISO, toast, safe } from '../ui.js';
+import { $, $$, esc, fmtKm, fmtDate, todayISO, toast, safe, vehicleAvatar } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
 // L'avancement est gardé ici, EN DEHORS de la fonction : si l'écran
@@ -51,11 +51,13 @@ export async function renderActivityWizard(root) {
   let body = '';
 
   if (wiz.step === 1) {
+    const urls = await db.photoUrls(
+      vehicles.filter(v => v.photo_path).map(v => ({ path: v.photo_path })));
     body = vehicles.length ? `
       <div class="wiz-options">
         ${vehicles.map(v => `
           <button class="option-card" data-vehicle="${v.id}">
-            <span class="opt-ico">🚗</span>
+            ${vehicleAvatar(v, urls)}
             <span class="opt-txt">
               <span class="opt-title">${esc(v.name)}</span>
               <span class="muted">${esc([v.brand, v.model].filter(Boolean).join(' ') || v.type || '—')} · ${fmtKm(v.km)}</span>

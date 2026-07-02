@@ -1,9 +1,9 @@
 // ── Point d'entrée : session, navigation, synchro temps réel ────
 
 import { SUPABASE_KEY } from './config.js';
-import { supabase, isMember, onAnyChange } from './db.js';
+import { supabase, isMember, onAnyChange, generateDueActivities } from './db.js';
 import { renderLogin, renderNotMember } from './auth.js';
-import { esc, isModalOpen } from './ui.js';
+import { esc, isModalOpen, toast } from './ui.js';
 import { setupAutoUpdate } from './update.js';
 import { renderHome } from './views/home.js';
 import { renderVehicles } from './views/vehicles.js';
@@ -33,6 +33,8 @@ async function route() {
   if (!session) return renderLogin(app);
   if (!member) return renderNotMember(app, session.user.email);
 
+  await autoGenerate(); // échéances → activités automatiques
+
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   try {
     if (parts[0] === 'vehicle' && parts[1]) await renderVehicle(app, parts[1], parts[2]);
@@ -54,6 +56,22 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
+
+// ── Échéances → activités automatiques ──────────────────────────
+// Vérifie (au plus une fois par heure) si des échéances datées
+// arrivent à moins d'un mois : l'activité correspondante est alors
+// créée toute seule et apparaît dans le Planning.
+let lastAutoGen = 0;
+async function autoGenerate() {
+  if (Date.now() - lastAutoGen < 3600_000) return;
+  lastAutoGen = Date.now();
+  try {
+    const n = await generateDueActivities();
+    if (n) toast(`📅 ${n} activité${n > 1 ? 's' : ''} planifiée${n > 1 ? 's' : ''} automatiquement (échéance dans moins d'un mois)`);
+  } catch (e) {
+    console.error(e); // ne bloque jamais l'affichage de l'app
+  }
+}
 
 // ── Synchro temps réel ──────────────────────────────────────────
 // Quand la base change (ex : ton père ajoute un OT), on redessine

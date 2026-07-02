@@ -58,7 +58,31 @@ export async function deleteVehicle(id) {
   if (photos.length) {
     await supabase.storage.from('photos').remove(photos.map(p => p.path));
   }
+  // … puis sa photo de profil, si elle existe
+  const v = check(await supabase.from('vehicles').select('photo_path').eq('id', id).single());
+  if (v.photo_path) {
+    await supabase.storage.from('photos').remove([v.photo_path]);
+  }
   check(await supabase.from('vehicles').delete().eq('id', id));
+}
+
+// ── Photo de profil d'un véhicule ───────────────────────────────
+export async function setVehiclePhoto(vehicle, file) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `vehicles/${vehicle.id}/${crypto.randomUUID()}.${ext}`;
+  check(await supabase.storage.from('photos').upload(path, file));
+  check(await supabase.from('vehicles').update({ photo_path: path }).eq('id', vehicle.id));
+  // L'ancienne photo est effacée après coup (si l'envoi a réussi)
+  if (vehicle.photo_path) {
+    await supabase.storage.from('photos').remove([vehicle.photo_path]);
+  }
+}
+
+export async function removeVehiclePhoto(vehicle) {
+  check(await supabase.from('vehicles').update({ photo_path: null }).eq('id', vehicle.id));
+  if (vehicle.photo_path) {
+    await supabase.storage.from('photos').remove([vehicle.photo_path]);
+  }
 }
 
 // ── Ordres de travail ───────────────────────────────────────────
@@ -150,8 +174,43 @@ export async function listDeadlines(vehicleId) {
 
 export async function listAllDeadlines() {
   return check(
-    await supabase.from('deadlines').select('id, vehicle_id, title, due_km, due_date, notes')
+    await supabase.from('deadlines')
+      .select('id, vehicle_id, title, due_km, due_date, notes, work_order_id')
   );
+}
+
+// ── Échéances → activités automatiques ──────────────────────────
+// Pour chaque échéance datée qui n'a pas encore créé son activité :
+// si sa date est à moins d'un mois, on crée l'activité (préventive)
+// et on note son identifiant sur l'échéance pour ne pas recommencer.
+// Renvoie le nombre d'activités créées.
+export async function generateDueActivities() {
+  const dues = check(
+    await supabase.from('deadlines').select('*')
+      .is('work_order_id', null)
+      .not('due_date', 'is', null)
+  );
+
+  const limit = new Date();
+  limit.setDate(limit.getDate() + 30);   // aujourd'hui + 1 mois
+  const limitISO = limit.toISOString().slice(0, 10);
+
+  let created = 0;
+  for (const d of dues) {
+    if (d.due_date > limitISO) continue;   // encore trop loin
+    const ot = check(
+      await supabase.from('work_orders').insert({
+        vehicle_id:  d.vehicle_id,
+        type:        'preventif',
+        date:        d.due_date,
+        description: [d.title, d.notes].filter(Boolean).join('\n'),
+        status:      'ouvert',
+      }).select().single()
+    );
+    check(await supabase.from('deadlines').update({ work_order_id: ot.id }).eq('id', d.id));
+    created++;
+  }
+  return created;
 }
 
 export async function saveDeadline(values, id = null) {

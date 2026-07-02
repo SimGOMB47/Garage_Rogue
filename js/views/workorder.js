@@ -102,8 +102,8 @@ export async function renderWorkOrder(root, id, mode) {
       const next = ot.status === 'ouvert' ? 'en_cours' : 'cloture';
       await db.saveWorkOrder({ status: next }, id);
       if (next === 'cloture') {
-        toast('Activité terminée ✅ — enregistrée dans l’historique');
-        location.hash = `#/vehicle/${ot.vehicle_id}/ot`;  // montre l'historique
+        toast('Activité terminée ✅ — rangée dans l’Historique');
+        location.hash = `#/vehicle/${ot.vehicle_id}/histo`;  // montre l'historique
       } else {
         toast('Activité en cours 🔧');
         rerender();

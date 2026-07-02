@@ -40,8 +40,22 @@ export const vehicleFields = [
   { name: 'plate',  label: 'Immatriculation', placeholder: 'AB-123-CD' },
   { name: 'km',     label: 'Kilométrage', type: 'number', step: '1', required: true },
   { name: 'status', label: 'Statut', type: 'select', options: VEHICLE_STATUS },
-  { name: 'type',   label: 'Type', datalist: ['Voiture', 'Moto', 'Tracteur', 'Utilitaire', 'Remorque', 'Quad'] },
+  { name: 'type',   label: 'Type', datalist: ['Voiture', 'Moto', 'Bateau', 'Tracteur', 'Utilitaire', 'Remorque', 'Quad'] },
 ];
+
+// Symbole affiché selon le type de véhicule (champ libre : on
+// compare en minuscules ; type inconnu ou vide → 🚗)
+const VEHICLE_ICONS = {
+  voiture:    '🚗',
+  moto:       '🏍️',
+  bateau:     '🛥️',
+  tracteur:   '🚜',
+  utilitaire: '🚐',
+  remorque:   '🚚',
+  quad:       '🛞',
+};
+export const vehicleIcon = type =>
+  VEHICLE_ICONS[String(type ?? '').trim().toLowerCase()] ?? '🚗';
 
 export const otFields = [
   { name: 'type',        label: 'Type d’intervention', type: 'select', options: OT_TYPES },

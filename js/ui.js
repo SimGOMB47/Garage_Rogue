@@ -1,6 +1,7 @@
 // ── Petits utilitaires d'interface ──────────────────────────────
 
 import { WARN_KM, WARN_DAYS } from './config.js';
+import { vehicleIcon } from './constants.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -29,6 +30,16 @@ export const safe = fn => async (...args) => {
   try { await fn(...args); }
   catch (e) { console.error(e); toast(e.message, 'error'); }
 };
+
+// ── Avatar d'un véhicule ────────────────────────────────────────
+// Sa photo si elle existe (urls : chemin → lien signé), sinon le
+// symbole correspondant à son type (🚗, 🏍️, 🛥️…).
+export function vehicleAvatar(v, urls = {}) {
+  const url = v.photo_path && urls[v.photo_path];
+  return url
+    ? `<img class="v-thumb" src="${esc(url)}" alt="" loading="lazy">`
+    : `<span class="v-thumb ico">${vehicleIcon(v.type)}</span>`;
+}
 
 // ── Toasts (messages furtifs en haut de l'écran) ────────────────
 export function toast(msg, type = 'info') {

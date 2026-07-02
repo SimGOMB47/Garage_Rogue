@@ -2,10 +2,10 @@
 
 import * as db from '../db.js';
 import { VEHICLE_STATUS, vehicleFields, label } from '../constants.js';
-import { $, $$, esc, fmtMoney, fmtKm, formModal, toast, safe, dueStatus } from '../ui.js';
+import { $, $$, esc, fmtMoney, fmtKm, formModal, toast, safe, dueStatus, vehicleAvatar } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
-function vehicleCard(v, deadlines) {
+function vehicleCard(v, deadlines, urls) {
   // Indicateur d'échéances en retard (rouge) ou proches (orange)
   const statuses = deadlines.map(d => dueStatus(d, v.km));
   const late = statuses.filter(s => s === 'late').length;
@@ -22,6 +22,7 @@ function vehicleCard(v, deadlines) {
   return `
     <a class="card vehicle-card" href="#/vehicle/${v.id}/ot">
       <div class="row">
+        ${vehicleAvatar(v, urls)}
         <strong class="grow">${esc(v.name)}</strong>
         <span class="badge st-${v.status}">${esc(label(VEHICLE_STATUS, v.status))}</span>
       </div>
@@ -40,6 +41,9 @@ export async function renderVehicles(root) {
     db.listVehicles(),
     db.listAllDeadlines(),
   ]);
+  // Liens signés des photos de profil (pour ceux qui en ont une)
+  const urls = await db.photoUrls(
+    vehicles.filter(v => v.photo_path).map(v => ({ path: v.photo_path })));
 
   root.innerHTML = `
     <header class="topbar">
@@ -48,7 +52,7 @@ export async function renderVehicles(root) {
     </header>
     <main class="page with-nav">
       ${vehicles.length
-        ? vehicles.map(v => vehicleCard(v, allDeadlines.filter(d => d.vehicle_id === v.id))).join('')
+        ? vehicles.map(v => vehicleCard(v, allDeadlines.filter(d => d.vehicle_id === v.id), urls)).join('')
         : '<p class="empty">Aucun véhicule pour l’instant.<br>Touche le bouton + pour ajouter le premier !</p>'}
     </main>
     <button class="fab with-nav" id="add" title="Ajouter un véhicule">+</button>

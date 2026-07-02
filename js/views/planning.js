@@ -5,7 +5,7 @@
 
 import * as db from '../db.js';
 import { OT_TYPES, OT_STATUS, label } from '../constants.js';
-import { $$, esc, fmtDate, todayISO, dueStatus, dueText } from '../ui.js';
+import { $$, esc, fmtDate, todayISO, dueStatus, dueText, vehicleAvatar } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
 // "dans 3 j", "aujourd'hui", "il y a 5 j"
@@ -27,6 +27,9 @@ export async function renderPlanning(root) {
     db.listAllWorkOrders(),
     db.listAllDeadlines(),
   ]);
+  // Liens signés des photos de profil (pour ceux qui en ont une)
+  const purls = await db.photoUrls(
+    vehicles.filter(v => v.photo_path).map(v => ({ path: v.photo_path })));
 
   const today = todayISO();
   const vName = id => vehicles.find(v => v.id === id)?.name ?? '?';
@@ -48,6 +51,7 @@ export async function renderPlanning(root) {
   // Échéances en alerte (dépassées ou proches), les plus urgentes d'abord
   const orderDue = { late: 0, soon: 1 };
   const alertDues = deadlines
+    .filter(d => !d.work_order_id)   // son activité existe déjà → elle prend le relais
     .map(d => ({ ...d, st: dueStatus(d, vKm(d.vehicle_id)) }))
     .filter(d => d.st !== 'ok')
     .sort((a, b) => orderDue[a.st] - orderDue[b.st]);
@@ -70,7 +74,7 @@ export async function renderPlanning(root) {
     return `
       <details class="plan-vehicle" data-id="${v.id}" ${openVehicles.has(v.id) ? 'open' : ''}>
         <summary class="card">
-          <span class="opt-ico">🚗</span>
+          ${vehicleAvatar(v, purls)}
           <span class="opt-txt grow">
             <span class="opt-title">${esc(v.name)}</span>
             <span class="muted">

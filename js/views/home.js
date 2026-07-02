@@ -18,7 +18,7 @@ export async function renderHome(root) {
   // Résumé rapide : activités planifiées à venir + alertes
   const upcoming  = workOrders.filter(w => w.status !== 'cloture' && w.date >= today).length;
   const lateActs  = workOrders.filter(w => w.status !== 'cloture' && w.date <  today).length;
-  const lateDues  = deadlines.filter(d => dueStatus(d, kmOf(d.vehicle_id)) === 'late').length;
+  const lateDues  = deadlines.filter(d => !d.work_order_id && dueStatus(d, kmOf(d.vehicle_id)) === 'late').length;
   const alerts    = lateActs + lateDues;
 
   const cards = [
