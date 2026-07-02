@@ -316,6 +316,48 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .hub-card .hub-title { font-weight: 700; font-size: 1rem; }
 .hub-card .hub-sub { font-size: .8rem; }
 
+/* ── Assistant "Créer une activité" ────────────────────────── */
+.wiz-progress { display: flex; align-items: center; gap: 10px; }
+.wiz-progress .bar {
+  flex: 1; height: 6px; border-radius: 3px;
+  background: var(--panel-2); overflow: hidden;
+}
+.wiz-progress .bar span {
+  display: block; height: 100%; border-radius: 3px;
+  background: var(--accent); transition: width .2s ease;
+}
+.wiz-step-title { font-size: 1.15rem; font-weight: 700; margin: 2px 0 6px; }
+
+.wiz-options { display: grid; gap: 10px; }
+.option-card {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  text-align: left; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+}
+.option-card:active { background: var(--panel-2); }
+.option-card .opt-ico { font-size: 1.7rem; flex-shrink: 0; }
+.option-card .opt-txt { display: grid; gap: 3px; min-width: 0; }
+.option-card .opt-title { font-weight: 700; }
+
+.chips-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 10px 14px; font-size: .9rem; font-weight: 600; cursor: pointer;
+}
+.chip-btn:active, .chip-btn.selected {
+  background: var(--panel-2); border-color: var(--accent); color: var(--accent);
+}
+.wiz-skip { text-align: center; }
+
+.recap-list { display: grid; gap: 10px; }
+.recap-list .rec-row { display: flex; gap: 10px; align-items: baseline; }
+.recap-list .rec-lbl {
+  color: var(--muted); font-size: .82rem; font-weight: 600;
+  min-width: 110px; flex-shrink: 0;
+}
+
 /* ── Écrans plus larges (ordinateur) ───────────────────────── */
 @media (min-width: 700px) {
   .overlay { align-items: center; padding: 24px; }

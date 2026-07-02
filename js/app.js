@@ -36,7 +36,7 @@ async function route() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   try {
     if (parts[0] === 'vehicle' && parts[1]) await renderVehicle(app, parts[1], parts[2]);
-    else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1]);
+    else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1], parts[2]);
     else if (parts[0] === 'vehicles') await renderVehicles(app);
     else if (parts[0] === 'new') await renderActivityWizard(app);
     else if (parts[0] === 'planning') await renderPlanning(app);

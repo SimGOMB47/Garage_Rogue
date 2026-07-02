@@ -7,7 +7,8 @@ import {
   formModal, confirmModal, toast, safe, lightbox,
 } from '../ui.js';
 
-export async function renderWorkOrder(root, id) {
+export async function renderWorkOrder(root, id, mode) {
+  const isNew = mode === 'new'; // arrivée depuis l'assistant de création
   const ot = await db.getWorkOrder(id);
   const parts = (ot.work_order_parts || [])
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -15,12 +16,12 @@ export async function renderWorkOrder(root, id) {
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const urls = await db.photoUrls(photos);
   const total = parts.reduce((s, p) => s + Number(p.price) * Number(p.qty), 0);
-  const rerender = () => renderWorkOrder(root, id);
+  const rerender = () => renderWorkOrder(root, id, mode);
 
   root.innerHTML = `
     <header class="topbar">
       <a class="icon-btn" href="#/vehicle/${ot.vehicle_id}/ot" title="Retour">←</a>
-      <h1 class="grow">OT du ${fmtDate(ot.date)}</h1>
+      <h1 class="grow">${isNew ? 'Nouvelle activité' : `OT du ${fmtDate(ot.date)}`}</h1>
       <button class="icon-btn" id="edit-ot" title="Modifier l’OT">✎</button>
     </header>
     <main class="page">
@@ -72,7 +73,19 @@ export async function renderWorkOrder(root, id) {
         </div>
       </section>
 
+      ${isNew ? `
+        <button class="btn btn-primary" id="finish-new">✓ Créer l’activité</button>
+        <p class="muted" style="text-align:center">Ajoute d’abord les pièces et les photos si besoin.</p>` : ''}
+
     </main>`;
+
+  // Bouton final de l'assistant : valide et retourne à l'accueil
+  if (isNew) {
+    $('#finish-new').onclick = () => {
+      toast('Activité créée 🎉');
+      location.hash = '#/';
+    };
+  }
 
   // Modifier / supprimer l'OT
   $('#edit-ot').onclick = safe(async () => {
