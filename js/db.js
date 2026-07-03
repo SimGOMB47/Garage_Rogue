@@ -13,22 +13,81 @@ function check({ data, error }) {
   return data;
 }
 
-// ── Cache mémoire (vitesse) ─────────────────────────────────────
-// Chaque lecture est gardée en mémoire : revenir sur un écran ou
-// changer d'onglet devient instantané, sans rappeler le serveur.
-// Le cache est vidé à chaque écriture et à chaque changement reçu
-// par la synchro temps réel : il n'est donc jamais périmé.
-const cache = new Map();
+// ── Cache "afficher d'abord, vérifier ensuite" ──────────────────
+// - On affiche IMMÉDIATEMENT les données en mémoire (ou la copie
+//   gardée sur le téléphone au dernier passage), même si elles
+//   datent un peu → aucun clic n'attend le réseau.
+// - En arrière-plan, on redemande la vérité au serveur ; si elle
+//   diffère, l'événement "data-updated" fait redessiner l'écran.
+const cache = new Map();     // clé → { data, fresh }
+const pending = new Map();   // clé → requête en cours (anti-doublon)
+const LS_PREFIX = 'gr-cache:';
 
-function cached(key, fetcher) {
-  if (!cache.has(key)) {
-    const p = fetcher().catch(err => { cache.delete(key); throw err; });
-    cache.set(key, p);
-  }
-  return cache.get(key);
+function loadLocal(key) {
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + key);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch { return undefined; }
 }
 
-export function clearCache() { cache.clear(); }
+function saveLocal(key, data) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(data)); } catch {}
+}
+
+// Va chercher la vérité au serveur et met tout à jour
+function refresh(key, fetcher) {
+  if (pending.has(key)) return pending.get(key);
+  const p = fetcher()
+    .then(data => {
+      pending.delete(key);
+      const old = cache.get(key);
+      cache.set(key, { data, fresh: true });
+      saveLocal(key, data);
+      if (old && JSON.stringify(old.data) !== JSON.stringify(data)) {
+        window.dispatchEvent(new CustomEvent('data-updated'));
+      }
+      return data;
+    })
+    .catch(err => { pending.delete(key); throw err; });
+  pending.set(key, p);
+  return p;
+}
+
+function cached(key, fetcher) {
+  const entry = cache.get(key);
+  if (entry) {
+    // En mémoire : affichage instantané (+ vérification si périmé)
+    if (!entry.fresh) refresh(key, fetcher).catch(() => {});
+    return Promise.resolve(entry.data);
+  }
+  const saved = loadLocal(key);
+  if (saved !== undefined) {
+    // Copie du téléphone : affichage instantané + vérification derrière
+    cache.set(key, { data: saved, fresh: false });
+    refresh(key, fetcher).catch(() => {});
+    return Promise.resolve(saved);
+  }
+  // Première fois : là, il faut attendre le serveur
+  return refresh(key, fetcher);
+}
+
+// Après une de NOS écritures : on oublie tout (mémoire + copie
+// locale) pour relire des données justes immédiatement.
+export function clearCache() {
+  cache.clear();
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(LS_PREFIX)) localStorage.removeItem(k);
+    }
+  } catch {}
+}
+
+// Changement reçu du serveur (temps réel) : on garde l'affichage
+// instantané, mais tout sera revérifié au prochain passage.
+export function staleCache() {
+  for (const e of cache.values()) e.fresh = false;
+}
 
 // ── Membres ─────────────────────────────────────────────────────
 export async function isMember() {
@@ -332,7 +391,7 @@ export function onAnyChange(callback) {
   supabase
     .channel('garage-sync')
     .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
-      clearCache();
+      staleCache();
       callback(payload);
     })
     .subscribe();

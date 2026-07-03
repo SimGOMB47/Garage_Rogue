@@ -33,7 +33,7 @@ async function route() {
   if (!session) return renderLogin(app);
   if (!member) return renderNotMember(app, session.user.email);
 
-  await autoGenerate(); // échéances → activités automatiques
+  autoGenerate(); // échéances → activités automatiques (en arrière-plan)
 
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   try {
@@ -67,7 +67,10 @@ async function autoGenerate() {
   lastAutoGen = Date.now();
   try {
     const n = await generateDueActivities();
-    if (n) toast(`📅 ${n} activité${n > 1 ? 's' : ''} planifiée${n > 1 ? 's' : ''} automatiquement (échéance dans moins d'un mois)`);
+    if (n) {
+      toast(`📅 ${n} activité${n > 1 ? 's' : ''} planifiée${n > 1 ? 's' : ''} automatiquement (échéance dans moins d'un mois)`);
+      scheduleRefresh(); // fait apparaître les nouvelles activités
+    }
   } catch (e) {
     console.error(e); // ne bloque jamais l'affichage de l'app
   }
@@ -89,6 +92,10 @@ function scheduleRefresh() {
 window.addEventListener('modal-closed', () => {
   if (pendingRefresh) { pendingRefresh = false; scheduleRefresh(); }
 });
+
+// La vérification en arrière-plan a trouvé des données plus
+// récentes que celles affichées → on redessine l'écran.
+window.addEventListener('data-updated', scheduleRefresh);
 
 // ── Session ─────────────────────────────────────────────────────
 async function applySession(s) {
