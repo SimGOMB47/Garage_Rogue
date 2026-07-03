@@ -26,6 +26,10 @@
 * { box-sizing: border-box; }
 button { font: inherit; color: inherit; }
 
+/* Réactivité tactile : supprime le délai d'attente du "double-tap"
+   sur iPhone → les touchers répondent immédiatement */
+a, button, summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
 html, body {
   margin: 0;
   background: var(--bg);
