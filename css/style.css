@@ -1,22 +1,25 @@
 /* ════════════════════════════════════════════════════════════
-   Garage de Rogué — thème sombre atelier, mobile d'abord
+   Garage de Rogué — thème clair épuré, mobile d'abord
+   Palette : fond #FAFAFA, cartes blanches, accent orange unique,
+   statuts vert / ambre / rouge. Références : Fleetio, Linear.
    ════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg: #17191B;          /* anthracite */
-  --panel: #1F2226;
-  --panel-2: #272B30;
-  --border: #32373D;
-  --text: #E8E6E3;
-  --muted: #9BA0A6;
-  --accent: #F2B705;      /* jaune atelier */
-  --accent-dark: #C79704;
-  --green: #4CAF7D;
-  --orange: #E8833A;
-  --red: #E05252;
-  --blue: #4FA3D9;
-  --violet: #9B7ED9;
-  --radius: 14px;
+  --bg: #454D57;          /* gris ardoise foncé */
+  --panel: #F2F3F5;       /* cartes gris très léger */
+  --panel-2: #E4E6E9;     /* fonds secondaires (boutons discrets) */
+  --border: #D9DCE0;
+  --text: #1F2937;        /* gris foncé (titres, texte) */
+  --muted: #6B7280;       /* gris moyen (texte secondaire) */
+  --accent: #EA580C;      /* orange — SEULE couleur d'accent */
+  --accent-dark: #C2410C;
+  --green: #16A34A;       /* statuts OK / terminé */
+  --orange: #F59E0B;      /* ambre : attention / en cours */
+  --red: #DC2626;         /* retard / hors service */
+  --blue: #2563EB;        /* type préventif (info) */
+  --violet: #7C3AED;      /* type amélioratif (info) */
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -27,15 +30,15 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
 }
 
 #app { max-width: 640px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
 
-h1 { font-size: 1.2rem; margin: 0; }
-h2 { font-size: 1rem; margin: 0 0 10px; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+h1 { font-size: 1.5rem; font-weight: 800; margin: 0; }
+h2 { font-size: .8rem; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 a { color: inherit; text-decoration: none; }
 .accent { color: var(--accent); }
 .muted { color: var(--muted); font-size: .88rem; }
@@ -43,44 +46,51 @@ a { color: inherit; text-decoration: none; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cost { color: var(--accent); font-weight: 700; }
-.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+.empty { text-align: center; color: #DFE3E8; padding: 48px 16px; }
+
+/* Textes posés directement sur le fond sombre (hors cartes claires) :
+   en clair pour rester bien lisibles */
+.page > .muted, .page > h2, .plan-h { color: #DFE3E8; }
 
 /* ── Barre du haut ─────────────────────────────────────────── */
 .topbar {
   position: sticky; top: 0; z-index: 10;
-  display: flex; align-items: center; gap: 10px;
-  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
-  background: rgba(23, 25, 27, .92);
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 14px;
+  background: rgba(69, 77, 87, .92);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  color: #fff;
 }
 .topbar h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .icon-btn {
-  background: var(--panel-2); color: var(--text);
+  background: var(--panel); color: var(--text) !important;
   border: 1px solid var(--border); border-radius: 10px;
   width: 38px; height: 38px; font-size: 1.05rem;
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0;
+  box-shadow: var(--shadow);
 }
-.icon-btn:active { background: var(--border); }
+.icon-btn:active { background: var(--panel-2); }
 
 /* ── Contenu / cartes ──────────────────────────────────────── */
-.page { padding: 14px 14px calc(96px + var(--safe-bottom)); display: grid; gap: 10px; align-content: start; }
+.page { padding: 16px 16px calc(96px + var(--safe-bottom)); display: grid; gap: 12px; align-content: start; }
 
 .card {
   display: block;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
 }
 a.card:active { background: var(--panel-2); }
-.card .row + .row, .card .row + div, .card div + .row { margin-top: 6px; }
+.card .row + .row, .card .row + div, .card div + .row { margin-top: 8px; }
 
 .vehicle-summary {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
@@ -88,38 +98,41 @@ a.card:active { background: var(--panel-2); }
 
 /* ── Badges & puces ────────────────────────────────────────── */
 .badge, .chip {
-  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
   font-size: .74rem; font-weight: 700; letter-spacing: .02em;
   white-space: nowrap;
 }
-.badge.st-en_service   { background: rgba(76,175,125,.15);  color: var(--green); }
-.badge.st-maintenance  { background: rgba(242,183,5,.15);   color: var(--accent); }
-.badge.st-hors_service { background: rgba(224,82,82,.15);   color: var(--red); }
+/* Statut d'un véhicule : vert / ambre / rouge */
+.badge.st-en_service   { background: rgba(22, 163, 74, .1);   color: var(--green); }
+.badge.st-maintenance  { background: rgba(245, 158, 11, .12); color: #B45309; }
+.badge.st-hors_service { background: rgba(220, 38, 38, .1);   color: var(--red); }
 
-.badge.type-preventif   { background: rgba(79,163,217,.15); color: var(--blue); }
-.badge.type-correctif   { background: rgba(232,131,58,.15); color: var(--orange); }
-.badge.type-amelioratif { background: rgba(155,126,217,.15); color: var(--violet); }
+/* Type d'intervention (information, teintes douces) */
+.badge.type-preventif   { background: #EFF6FF; color: var(--blue); }
+.badge.type-correctif   { background: #FFF7ED; color: var(--accent); }
+.badge.type-amelioratif { background: #F5F3FF; color: var(--violet); }
 
-.chip.st-ouvert   { background: rgba(232,131,58,.15); color: var(--orange); }
-.chip.st-en_cours { background: rgba(242,183,5,.15);  color: var(--accent); }
-.chip.st-cloture  { background: rgba(76,175,125,.15); color: var(--green); }
+/* Statut d'une activité : gris = à faire, ambre = en cours, vert = terminé */
+.chip.st-ouvert   { background: var(--panel-2);              color: var(--muted); }
+.chip.st-en_cours { background: rgba(245, 158, 11, .12);     color: #B45309; }
+.chip.st-cloture  { background: rgba(22, 163, 74, .1);       color: var(--green); }
 
 .warn-chip { font-size: .78rem; font-weight: 700; }
 .warn-chip.late { color: var(--red); }
-.warn-chip.soon { color: var(--orange); }
+.warn-chip.soon { color: #B45309; }
 
 /* ── Onglets ───────────────────────────────────────────────── */
 .tabs {
   display: flex; position: sticky; top: 0; z-index: 9;
-  background: var(--bg); border-bottom: 1px solid var(--border);
+  background: var(--bg); border-bottom: 1px solid rgba(255, 255, 255, .12);
 }
 .tabs a {
   flex: 1; text-align: center; padding: 12px 2px;
-  font-size: .76rem; font-weight: 600; color: var(--muted);
+  font-size: .76rem; font-weight: 600; color: #C4CAD2;
   border-bottom: 2px solid transparent;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs a.active { color: #FF7A2F; border-bottom-color: var(--accent); }
 
 /* ── Échéances ─────────────────────────────────────────────── */
 .due-item { border-left: 4px solid var(--green); width: 100%; text-align: left; cursor: pointer; }
@@ -127,7 +140,7 @@ a.card:active { background: var(--panel-2); }
 .due-item.due-late { border-left-color: var(--red); }
 .due-item .due-when { font-size: .85rem; margin-top: 4px; }
 .due-ok   .due-when { color: var(--green); }
-.due-soon .due-when { color: var(--orange); }
+.due-soon .due-when { color: #B45309; }
 .due-late .due-when { color: var(--red); }
 
 /* ── Stock ─────────────────────────────────────────────────── */
@@ -161,20 +174,21 @@ a.card:active { background: var(--panel-2); }
 .thumb-del {
   position: absolute; top: 4px; right: 4px;
   width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(0,0,0,.65); color: #fff; border: none;
+  background: rgba(0, 0, 0, .55); color: #fff; border: none;
   font-size: .8rem; cursor: pointer;
 }
 .photo-add {
   aspect-ratio: 1; border: 2px dashed var(--border); border-radius: 10px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: var(--muted); font-size: .78rem; gap: 4px; cursor: pointer;
+  background: var(--panel);
 }
 .photo-add span:first-child { font-size: 1.4rem; color: var(--accent); }
 .photo-add input { display: none; }
 
 .lightbox {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(0,0,0,.92);
+  background: rgba(0, 0, 0, .88);
   display: flex; align-items: center; justify-content: center;
   padding: 16px; cursor: zoom-out;
 }
@@ -182,22 +196,23 @@ a.card:active { background: var(--panel-2); }
 
 /* ── Boutons & formulaires ─────────────────────────────────── */
 .btn {
-  background: var(--panel-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 12px;
-  padding: 12px 18px; font-size: .95rem; font-weight: 600;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 13px 18px; font-size: .95rem; font-weight: 600;
   cursor: pointer; text-align: center;
+  box-shadow: var(--shadow);
 }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #17191B; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:active { background: var(--accent-dark); }
-.btn-danger { background: none; border: none; color: var(--red); padding: 10px; font-size: .9rem; cursor: pointer; }
+.btn-danger { background: none; border: none; color: var(--red); padding: 10px; font-size: .9rem; cursor: pointer; box-shadow: none; }
 .link { background: none; border: none; color: var(--accent); font-size: .9rem; cursor: pointer; padding: 10px; }
 
 label { display: block; font-size: .82rem; color: var(--muted); font-weight: 600; }
 input, select, textarea {
-  display: block; width: 100%; margin-top: 5px;
-  background: var(--bg); color: var(--text);
+  display: block; width: 100%; margin-top: 6px;
+  background: var(--panel); color: var(--text);
   border: 1px solid var(--border); border-radius: 10px;
-  padding: 11px 12px; font-size: 1rem; font-family: inherit;
+  padding: 12px; font-size: 1rem; font-family: inherit;
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
 .part-form input { margin-top: 0; }
@@ -207,16 +222,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .fab {
   position: fixed; right: 18px; bottom: calc(18px + var(--safe-bottom)); z-index: 20;
   width: 58px; height: 58px; border-radius: 50%;
-  background: var(--accent); color: #17191B; border: none;
+  background: var(--accent); color: #fff; border: none;
   font-size: 2rem; line-height: 1; font-weight: 600;
-  box-shadow: 0 6px 18px rgba(0,0,0,.45); cursor: pointer;
+  box-shadow: 0 6px 16px rgba(234, 88, 12, .35); cursor: pointer;
 }
 .fab:active { background: var(--accent-dark); }
 
 /* ── Modales (tiroir qui monte depuis le bas) ──────────────── */
 .overlay {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(0,0,0,.6);
+  background: rgba(31, 41, 55, .4);
   display: flex; align-items: flex-end; justify-content: center;
 }
 .modal {
@@ -226,13 +241,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   background: var(--panel);
   border-radius: 18px 18px 0 0;
   border-top: 1px solid var(--border);
-  padding: 18px 18px calc(18px + var(--safe-bottom));
+  padding: 20px 18px calc(20px + var(--safe-bottom));
   animation: slide-up .18s ease-out;
 }
 @keyframes slide-up { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
-.modal h2 { margin-bottom: 14px; }
-.modal-body { display: grid; gap: 12px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.modal h2 { margin-bottom: 14px; color: var(--text); font-size: 1.05rem; text-transform: none; letter-spacing: 0; }
+.modal-body { display: grid; gap: 14px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
 .modal-actions .btn { flex: 1; }
 .modal .btn-danger { width: 100%; margin-top: 14px; }
 
@@ -243,10 +258,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   z-index: 70; display: grid; gap: 8px; width: min(92vw, 420px);
 }
 .toast {
-  background: var(--panel-2); border: 1px solid var(--border);
+  background: var(--panel); border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   color: var(--text); padding: 12px 14px; border-radius: 10px;
-  font-size: .9rem; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  font-size: .9rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
   animation: slide-up .15s ease-out;
 }
 .toast.error { border-left-color: var(--red); }
@@ -257,8 +272,11 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 14px; padding: 24px; text-align: center;
+  color: #F0F2F4;   /* texte clair sur le fond sombre */
 }
-.center-screen .card { width: 100%; max-width: 380px; text-align: left; display: grid; gap: 12px; }
+.center-screen .muted { color: #C4CAD2; }
+.center-screen .card { width: 100%; max-width: 380px; text-align: left; display: grid; gap: 12px; color: var(--text); }
+.center-screen .card .muted { color: var(--muted); }
 .auth .logo { font-size: 3rem; }
 .auth h1 { font-size: 1.6rem; }
 
@@ -267,7 +285,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   max-width: 640px; margin: 0 auto;
   display: flex; justify-content: space-around; align-items: stretch;
-  background: rgba(23, 25, 27, .96);
+  background: rgba(242, 243, 245, .97);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--border);
   padding-bottom: var(--safe-bottom);
@@ -281,13 +299,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .bottom-nav a.active { color: var(--accent); }
 .bottom-nav a:active { opacity: .6; }
 .bottom-nav .nav-ico { font-size: 1.3rem; line-height: 1; }
-/* Onglet central "Créer" : pastille jaune en relief */
+/* Onglet central "Créer" : pastille orange en relief */
 .bottom-nav .nav-create .nav-ico {
   width: 44px; height: 44px; margin-top: -16px;
-  background: var(--accent); color: #17191B;
+  background: var(--accent); color: #fff;
   border-radius: 50%; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,.45);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, .35);
 }
 
 /* Marges pour ne pas masquer le contenu / le bouton + derrière la barre */
@@ -295,14 +313,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .fab.with-nav  { bottom: calc(78px + var(--safe-bottom)); }
 
 /* ── Accueil : résumé rapide + grille de cartes ────────────── */
-.summary { display: flex; gap: 10px; }
+.summary { display: flex; gap: 12px; }
 .summary-tile {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px 10px;
+  border-radius: var(--radius); padding: 16px 10px;
+  box-shadow: var(--shadow);
 }
 .summary-tile:active { background: var(--panel-2); }
-.summary-tile .summary-num { font-size: 1.7rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+.summary-tile .summary-num { font-size: 1.7rem; font-weight: 800; color: var(--text); line-height: 1.1; }
 .summary-tile .summary-lbl { font-size: .76rem; color: var(--muted); text-align: center; }
 .summary-tile.alert .summary-num { color: var(--red); }
 
@@ -310,7 +329,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .hub-card {
   display: flex; flex-direction: column; justify-content: center; gap: 6px;
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 18px 14px; min-height: 120px;
+  border-radius: var(--radius); padding: 18px 16px; min-height: 120px;
+  box-shadow: var(--shadow);
 }
 .hub-card:active { background: var(--panel-2); }
 .hub-card .hub-ico { font-size: 2rem; line-height: 1; }
@@ -319,22 +339,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 /* ── Assistant "Créer une activité" ────────────────────────── */
 .wiz-progress { display: flex; align-items: center; gap: 10px; }
+.wiz-progress .muted { color: #C4CAD2; }
 .wiz-progress .bar {
   flex: 1; height: 6px; border-radius: 3px;
-  background: var(--panel-2); overflow: hidden;
+  background: rgba(255, 255, 255, .25); overflow: hidden;
 }
 .wiz-progress .bar span {
   display: block; height: 100%; border-radius: 3px;
   background: var(--accent); transition: width .2s ease;
 }
-.wiz-step-title { font-size: 1.15rem; font-weight: 700; margin: 2px 0 6px; }
+.wiz-step-title { font-size: 1.15rem; font-weight: 700; margin: 2px 0 6px; color: #fff; }
 
 .wiz-options { display: grid; gap: 10px; }
 .option-card {
   display: flex; align-items: center; gap: 14px; width: 100%;
   text-align: left; cursor: pointer;
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px;
+  border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow);
 }
 .option-card:active { background: var(--panel-2); }
 .option-card .opt-ico { font-size: 1.7rem; flex-shrink: 0; }
@@ -346,9 +368,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   background: var(--panel); color: var(--text);
   border: 1px solid var(--border); border-radius: 999px;
   padding: 10px 14px; font-size: .9rem; font-weight: 600; cursor: pointer;
+  box-shadow: var(--shadow);
 }
 .chip-btn:active, .chip-btn.selected {
-  background: var(--panel-2); border-color: var(--accent); color: var(--accent);
+  background: #FFF7ED; border-color: var(--accent); color: var(--accent);
 }
 .wiz-skip { text-align: center; }
 
@@ -382,11 +405,11 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 /* Bouton d'action du cycle de vie d'une activité */
 .st-action { width: 100%; margin-top: 12px; }
-.btn-done { background: var(--green); border-color: var(--green); color: #17191B; }
-.btn-done:active { background: #3d9166; }
+.btn-done { background: var(--green); border-color: var(--green); color: #fff; }
+.btn-done:active { background: #15803D; }
 .done-banner {
   margin-top: 12px; padding: 10px 12px; border-radius: 10px;
-  background: rgba(76,175,125,.12); color: var(--green);
+  background: rgba(22, 163, 74, .08); color: var(--green);
   font-size: .88rem; font-weight: 600;
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
@@ -418,13 +441,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .v-avatar-badge {
   position: absolute; right: -6px; bottom: -6px;
   width: 24px; height: 24px; border-radius: 50%;
-  background: var(--accent); font-size: .72rem;
+  background: var(--accent); color: #fff; font-size: .72rem;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
 }
 
 /* ── Tableau de bord ───────────────────────────────────────── */
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .stat-grid .summary-num { font-size: 1.35rem; }
 
 .bars { display: grid; gap: 12px; }
