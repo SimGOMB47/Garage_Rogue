@@ -81,6 +81,11 @@ export const stockFields = [
 ];
 
 export const specFields = [
-  { name: 'label', label: 'Caractéristique', required: true, placeholder: 'ex : Huile moteur' },
-  { name: 'value', label: 'Valeur', placeholder: 'ex : 5W30 — 4,5 L' },
+  { name: 'label', label: 'Nom de la fiche', required: true, placeholder: 'ex : Huile moteur' },
+  { name: 'brand', label: 'Marque', placeholder: 'ex : Total' },
+  { name: 'type',  label: 'Type', placeholder: 'ex : 5W30' },
+  { name: 'qty',   label: 'Quantité', placeholder: 'ex : 4,5 L' },
+  { name: 'notes', label: 'Informations supplémentaires', type: 'textarea', rows: 6,
+    placeholder: 'ex : référence du filtre, couple de serrage, où l’acheter…' },
+  { name: 'photo', label: 'Photo', type: 'file' },
 ];

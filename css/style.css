@@ -147,6 +147,14 @@ a.card:active { background: var(--panel-2); }
 .due-soon .due-when { color: #B45309; }
 .due-late .due-when { color: var(--red); }
 
+/* ── Fiche technique ───────────────────────────────────────── */
+.spec-thumb {
+  width: 56px; height: 56px; border-radius: 10px;
+  object-fit: cover; flex-shrink: 0; align-self: flex-start;
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+}
+
 /* ── Stock ─────────────────────────────────────────────────── */
 .stock-row { display: flex; align-items: center; gap: 8px; }
 .qty-btn {

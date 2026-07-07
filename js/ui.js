@@ -117,7 +117,15 @@ function fieldHTML(f, values) {
     ).join('')}</select></label>`;
   }
   if (f.type === 'textarea') {
-    return `<label>${esc(f.label)}<textarea name="${f.name}" rows="4" ${req}>${esc(v)}</textarea></label>`;
+    return `<label>${esc(f.label)}<textarea name="${f.name}" rows="${f.rows ?? 4}" ${req}
+      placeholder="${esc(f.placeholder || '')}">${esc(v)}</textarea></label>`;
+  }
+  if (f.type === 'file') {
+    // Champ photo : galerie ou appareil photo du téléphone.
+    // "values" ne peut pas pré-remplir un fichier : on indique
+    // seulement si une photo existe déjà.
+    const hint = values.photo_path ? ' (une photo existe déjà — choisir remplace)' : '';
+    return `<label>${esc(f.label)}${esc(hint)}<input type="file" name="${f.name}" accept="image/*"></label>`;
   }
   const extra = f.type === 'number' ? `inputmode="decimal" step="${f.step ?? 'any'}"` : '';
   const list = f.datalist ? `list="dl-${f.name}"` : '';
@@ -157,7 +165,10 @@ export function formModal({ title, fields, values = {}, submitLabel = 'Enregistr
       const out = {};
       for (const f of fields) {
         const raw = fd.get(f.name);
-        if (f.type === 'number') {
+        if (f.type === 'file') {
+          // Un fichier choisi, ou null si le champ est resté vide
+          out[f.name] = raw && raw.size ? raw : null;
+        } else if (f.type === 'number') {
           out[f.name] = raw === '' || raw == null ? null : Number(raw);
         } else {
           out[f.name] = String(raw ?? '').trim() || null;

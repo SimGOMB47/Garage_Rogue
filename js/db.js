@@ -142,6 +142,15 @@ export async function deleteVehicle(id) {
   if (photos.length) {
     await supabase.storage.from('photos').remove(photos.map(p => p.path));
   }
+  // … puis les photos de ses fiches techniques
+  const specs = check(
+    await supabase.from('vehicle_specs').select('photo_path')
+      .eq('vehicle_id', id)
+      .not('photo_path', 'is', null)
+  );
+  if (specs.length) {
+    await supabase.storage.from('photos').remove(specs.map(s => s.photo_path));
+  }
   // … puis sa photo de profil, si elle existe
   const v = check(await supabase.from('vehicles').select('photo_path').eq('id', id).single());
   if (v.photo_path) {
@@ -374,13 +383,36 @@ export function listSpecs(vehicleId) {
 
 export async function saveSpec(values, id = null) {
   clearCache();
-  if (id) check(await supabase.from('vehicle_specs').update(values).eq('id', id));
-  else check(await supabase.from('vehicle_specs').insert(values));
+  if (id) return check(await supabase.from('vehicle_specs').update(values).eq('id', id).select().single());
+  return check(await supabase.from('vehicle_specs').insert(values).select().single());
 }
 
-export async function deleteSpec(id) {
+// Photo d'une fiche technique (même principe que la photo de véhicule)
+export async function setSpecPhoto(spec, file) {
   clearCache();
-  check(await supabase.from('vehicle_specs').delete().eq('id', id));
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `specs/${spec.id}/${crypto.randomUUID()}.${ext}`;
+  check(await supabase.storage.from('photos').upload(path, file));
+  check(await supabase.from('vehicle_specs').update({ photo_path: path }).eq('id', spec.id));
+  if (spec.photo_path) {
+    await supabase.storage.from('photos').remove([spec.photo_path]);
+  }
+}
+
+export async function removeSpecPhoto(spec) {
+  clearCache();
+  check(await supabase.from('vehicle_specs').update({ photo_path: null }).eq('id', spec.id));
+  if (spec.photo_path) {
+    await supabase.storage.from('photos').remove([spec.photo_path]);
+  }
+}
+
+export async function deleteSpec(spec) {
+  clearCache();
+  if (spec.photo_path) {
+    await supabase.storage.from('photos').remove([spec.photo_path]);
+  }
+  check(await supabase.from('vehicle_specs').delete().eq('id', spec.id));
 }
 
 // ── Synchronisation temps réel ──────────────────────────────────

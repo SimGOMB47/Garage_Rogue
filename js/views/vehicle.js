@@ -7,7 +7,7 @@ import {
 } from '../constants.js';
 import {
   $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO,
-  formModal, confirmModal, toast, safe, dueStatus, dueText,
+  formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
 export async function renderVehicle(root, id, tab = 'ot') {
@@ -296,34 +296,70 @@ async function stockTab(content, addBtn, v, rerender) {
 // ── Onglet : fiche technique ────────────────────────────────────
 async function ficheTab(content, addBtn, v, rerender) {
   const specs = await db.listSpecs(v.id);
+  const urls = await db.photoUrls(
+    specs.filter(s => s.photo_path).map(s => ({ path: s.photo_path })));
 
   content.innerHTML = specs.length
-    ? specs.map(s => `
+    ? specs.map(s => {
+        const meta = [s.brand, s.type, s.qty != null ? `Qté : ${s.qty}` : null]
+          .filter(Boolean).map(esc).join(' · ');
+        const photo = s.photo_path && urls[s.photo_path];
+        return `
         <button class="card due-item" data-id="${s.id}" style="border-left-color: var(--accent)">
           <div class="row">
-            <span class="muted">${esc(s.label)}</span>
-            <span class="grow"></span>
-            <strong>${esc(s.value ?? '—')}</strong>
+            ${photo ? `<img class="spec-thumb" src="${esc(photo)}" alt="" loading="lazy" data-photo>` : ''}
+            <div class="grow">
+              <strong>${esc(s.label)}</strong>
+              ${meta ? `<div class="muted">${meta}</div>` : ''}
+              ${s.notes ? `<div class="muted clamp">${esc(s.notes)}</div>` : ''}
+            </div>
           </div>
-        </button>`).join('')
-    : '<p class="empty">Fiche technique vide.<br>Touche + pour ajouter une caractéristique<br>(huile, pression pneus, couples de serrage…).</p>';
+        </button>`;
+      }).join('')
+    : '<p class="empty">Fiche technique vide.<br>Touche + pour créer une fiche<br>(huile, filtre, pneus, couples de serrage…).</p>';
 
   $$('[data-id]', content).forEach(el => {
-    el.onclick = safe(async () => {
+    el.onclick = safe(async e => {
       const s = specs.find(x => x.id === el.dataset.id);
+
+      // Toucher la photo : la voir en grand ou la retirer
+      if (e.target.hasAttribute('data-photo')) {
+        const res = await formModal({
+          title: 'Photo de la fiche',
+          fields: [],
+          submitLabel: '👁 Voir en grand',
+          dangerLabel: 'Retirer la photo',
+        });
+        if (res === 'DANGER') {
+          await db.removeSpecPhoto(s);
+          toast('Photo retirée');
+          rerender();
+        } else if (res) {
+          lightbox(urls[s.photo_path]);
+        }
+        return;
+      }
+
+      // Toucher la fiche : la modifier ou la supprimer
       const res = await formModal({
-        title: 'Modifier la caractéristique',
+        title: 'Modifier la fiche technique',
         fields: specFields,
         values: s,
-        dangerLabel: 'Supprimer cette ligne',
+        dangerLabel: 'Supprimer cette fiche',
       });
       if (res === 'DANGER') {
-        if (await confirmModal(`Supprimer « ${s.label} » ?`)) {
-          await db.deleteSpec(s.id);
+        if (await confirmModal(`Supprimer la fiche « ${s.label} » ?`)) {
+          await db.deleteSpec(s);
+          toast('Fiche supprimée');
           rerender();
         }
       } else if (res) {
-        await db.saveSpec(res, s.id);
+        const { photo, ...data } = res;
+        await db.saveSpec(data, s.id);
+        if (photo) {
+          toast('Envoi de la photo…');
+          await db.setSpecPhoto(s, photo);
+        }
         toast('Fiche mise à jour');
         rerender();
       }
@@ -331,9 +367,15 @@ async function ficheTab(content, addBtn, v, rerender) {
   });
 
   addBtn.onclick = safe(async () => {
-    const values = await formModal({ title: 'Nouvelle caractéristique', fields: specFields });
+    const values = await formModal({ title: 'Nouvelle fiche technique', fields: specFields });
     if (!values) return;
-    await db.saveSpec({ ...values, vehicle_id: v.id });
+    const { photo, ...data } = values;
+    const spec = await db.saveSpec({ ...data, vehicle_id: v.id });
+    if (photo) {
+      toast('Envoi de la photo…');
+      await db.setSpecPhoto(spec, photo);
+    }
+    toast('Fiche créée');
     rerender();
   });
 }
