@@ -2,7 +2,7 @@
 
 import * as db from '../db.js';
 import { supabase } from '../db.js';
-import { $, esc, todayISO, dueStatus, safe } from '../ui.js';
+import { $, esc, todayISO, dueStatus, otLate, safe } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
 export async function renderHome(root) {
@@ -16,8 +16,8 @@ export async function renderHome(root) {
   const kmOf = id => vehicles.find(v => v.id === id)?.km ?? 0;
 
   // Résumé rapide : activités planifiées à venir + alertes
-  const upcoming  = workOrders.filter(w => w.status !== 'cloture' && w.date >= today).length;
-  const lateActs  = workOrders.filter(w => w.status !== 'cloture' && w.date <  today).length;
+  const upcoming  = workOrders.filter(w => w.statut !== 'cloture' && !otLate(w, today)).length;
+  const lateActs  = workOrders.filter(w => otLate(w, today)).length;
   const lateDues  = deadlines.filter(d => !d.work_order_id && dueStatus(d, kmOf(d.vehicle_id)) === 'late').length;
   const alerts    = lateActs + lateDues;
 

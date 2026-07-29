@@ -205,7 +205,7 @@ export async function renderActivityWizard(root) {
         date:        wiz.date,
         km:          wiz.km === '' ? null : Number(wiz.km),
         description: wiz.description.trim() || null,
-        status:      'ouvert',
+        statut:      'planifie',
       });
       wiz = null;
       toast('Ajoute les pièces, puis valide 🔧');

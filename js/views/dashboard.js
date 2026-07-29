@@ -20,7 +20,7 @@ export async function renderDashboard(root) {
   ]);
 
   // ── 1) Chiffres clés ───────────────────────────────────────────
-  const todo      = workOrders.filter(w => w.status !== 'cloture').length;
+  const todo      = workOrders.filter(w => w.statut !== 'cloture').length;
   const done      = workOrders.length - todo;
   const totalCost = vehicles.reduce((s, v) => s + v.total_cost, 0);
 

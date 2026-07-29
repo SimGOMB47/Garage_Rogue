@@ -87,6 +87,17 @@ export function dueText(d, vehicleKm) {
   return parts.join(' · ') || 'Aucune échéance définie';
 }
 
+// ── « En retard » d'une activité ────────────────────────────────
+// JAMAIS stocké en base : toujours calculé ici, à l'affichage.
+// Règle : l'activité n'est pas clôturée ET son échéance est dépassée.
+// L'échéance = la date de fin (date_fin). Pour les activités créées
+// avant la refonte (sans date_fin), on retombe sur leur ancienne date.
+export function otLate(ot, today = todayISO()) {
+  if (!ot || ot.statut === 'cloture') return false;
+  const deadline = ot.date_fin || ot.date;
+  return !!deadline && deadline < today;
+}
+
 // ── Modales ─────────────────────────────────────────────────────
 let modalOpenCount = 0;
 export const isModalOpen = () => modalOpenCount > 0;

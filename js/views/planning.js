@@ -5,7 +5,7 @@
 
 import * as db from '../db.js';
 import { OT_TYPES, OT_STATUS, label } from '../constants.js';
-import { $$, esc, fmtDate, todayISO, dueStatus, dueText, vehicleAvatar } from '../ui.js';
+import { $$, esc, fmtDate, todayISO, dueStatus, dueText, otLate, vehicleAvatar } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
 // "dans 3 j", "aujourd'hui", "il y a 5 j"
@@ -39,7 +39,7 @@ export async function renderPlanning(root) {
   // Tri par date croissante : la plus en retard tout en haut,
   // puis la plus proche d'aujourd'hui, puis les plus lointaines.
   const open = workOrders
-    .filter(w => w.status !== 'cloture')
+    .filter(w => w.statut !== 'cloture')
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const groups = vehicles
@@ -57,20 +57,23 @@ export async function renderPlanning(root) {
     .sort((a, b) => orderDue[a.st] - orderDue[b.st]);
 
   // ── Cartes ─────────────────────────────────────────────────────
-  const otCard = w => `
-    <a class="card plan-item ${w.date < today ? 'plan-late' : ''}" href="#/ot/${w.id}">
+  const otCard = w => {
+    const late = otLate(w, today);
+    return `
+    <a class="card plan-item ${late ? 'plan-late' : ''}" href="#/ot/${w.id}">
       <div class="row">
         <span class="badge type-${w.type}">${esc(label(OT_TYPES, w.type))}</span>
-        <span class="chip st-${w.status}">${esc(label(OT_STATUS, w.status))}</span>
+        <span class="chip st-${w.statut}">${esc(label(OT_STATUS, w.statut))}</span>
         <span class="grow"></span>
-        <span class="${w.date < today ? 'warn-chip late' : 'muted'}">${fmtDate(w.date)} · ${relDate(w.date)}</span>
+        <span class="${late ? 'warn-chip late' : 'muted'}">${fmtDate(w.date)} · ${relDate(w.date)}</span>
       </div>
       ${w.subsystem ? `<div><strong>${esc(w.subsystem)}</strong></div>` : ''}
       ${w.description ? `<div class="muted clamp">${esc(w.description)}</div>` : ''}
     </a>`;
+  };
 
   const vehicleGroup = ({ v, ots }) => {
-    const lateCount = ots.filter(w => w.date < today).length;
+    const lateCount = ots.filter(w => otLate(w, today)).length;
     return `
       <details class="plan-vehicle" data-id="${v.id}" ${openVehicles.has(v.id) ? 'open' : ''}>
         <summary class="card">

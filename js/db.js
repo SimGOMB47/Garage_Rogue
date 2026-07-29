@@ -197,7 +197,7 @@ export function listAllWorkOrders() {
   return cached('ots:all', async () =>
     check(
       await supabase.from('work_orders')
-        .select('id, vehicle_id, subsystem, type, date, status, description')
+        .select('id, vehicle_id, subsystem, type, date, date_debut, date_fin, statut, description')
         .order('date')
     )
   );
@@ -337,8 +337,10 @@ export async function generateDueActivities() {
         vehicle_id:  d.vehicle_id,
         type:        'preventif',
         date:        d.due_date,
+        date_debut:  d.due_date,
+        date_fin:    d.due_date,
         description: [d.title, d.notes].filter(Boolean).join('\n'),
-        status:      'ouvert',
+        statut:      'planifie',
       }).select().single()
     );
     check(await supabase.from('deadlines').update({ work_order_id: ot.id }).eq('id', d.id));
@@ -423,11 +425,12 @@ export function listSousEnsembles(vehicleId) {
   return cached(`se:${vehicleId}`, async () => {
     const rows = check(
       await supabase.from('sous_ensembles')
-        .select('*, donnees_techniques(*)')
+        .select('*, organes(*), donnees_techniques(*)')
         .eq('vehicule_id', vehicleId)
         .order('ordre')
     );
     rows.forEach(se => {
+      se.organes = (se.organes || []).sort((a, b) => a.ordre - b.ordre);
       se.donnees_techniques = (se.donnees_techniques || [])
         .sort((a, b) => a.ordre - b.ordre);
     });

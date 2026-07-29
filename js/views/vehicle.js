@@ -1,13 +1,14 @@
 // ── Fiche véhicule : en-tête photo + 4 onglets (GMAO) ───────────
 //
 // Onglets : Création d'activité | Fiche technique | Historique | Stock
-//  - "Création d'activité" et "Stock de pièces" : à venir (prochain prompt)
-//  - "Fiche technique" : sous-ensembles + données techniques (construit ici)
-//  - "Historique" : réutilise l'affichage des activités clôturées
+//  - "Création d'activité" : formulaire 2 colonnes sur ordinateur,
+//    assistant guidé étape par étape sur iPhone (< 1100px).
+//  - "Fiche technique" : sous-ensembles + données techniques.
+//  - "Historique" : toutes les activités du véhicule (récentes d'abord).
+//  - "Stock de pièces" : à venir (prochain prompt).
 //
 // Note : les anciens onglets (Activités, Échéances, Stock, Fiche specs)
-// sont conservés plus bas dans le fichier — hors interface pour l'instant —
-// afin de les rebrancher facilement au prochain prompt.
+// sont conservés plus bas dans le fichier — hors interface pour l'instant.
 
 import * as db from '../db.js';
 import {
@@ -19,13 +20,15 @@ import {
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
-// Les 4 onglets de la nouvelle page véhicule
+// Les 4 onglets de la page véhicule
 const TABS = [
   ['create', 'Création d’activité'],
   ['fiche',  'Fiche technique'],
   ['histo',  'Historique'],
   ['stock',  'Stock de pièces'],
 ];
+
+const TYPE_ICONS = { preventif: '🛡️', correctif: '🔧', amelioratif: '⚡' };
 
 // Appui long (mobile) ou clic droit (ordinateur) sur un élément → action
 function longPress(el, handler) {
@@ -39,8 +42,8 @@ function longPress(el, handler) {
 }
 
 export async function renderVehicle(root, id, tab = 'fiche') {
-  // Onglet par défaut = Fiche technique ; on ramène tout onglet inconnu
-  // (ancien lien /ot, /due…) sur un onglet valide.
+  // Onglet par défaut = Fiche technique ; tout onglet inconnu (ancien
+  // lien /ot, /due…) est ramené sur un onglet valide.
   if (!TABS.some(([t]) => t === tab)) tab = 'fiche';
 
   const v = await db.getVehicle(id);
@@ -132,6 +135,7 @@ export async function renderVehicle(root, id, tab = 'fiche') {
   // Contenu de l'onglet courant
   if (tab === 'fiche') await ficheTechniqueTab(content, v, rerender);
   else if (tab === 'histo') await histoTab(content, v);
+  else if (tab === 'create') await createTab(content, v, id);
   else content.innerHTML = '<p class="empty">🚧 À venir<br>Cet onglet sera construit prochainement.</p>';
 }
 
@@ -140,8 +144,7 @@ export async function renderVehicle(root, id, tab = 'fiche') {
 // ════════════════════════════════════════════════════════════════
 async function ficheTechniqueTab(content, v, rerender) {
   const list = await db.listSousEnsembles(v.id);
-  // On n'affiche que les sous-ensembles qui ont au moins une donnée
-  // (sinon 11 titres vides).
+  // On n'affiche que les sous-ensembles ayant au moins une donnée.
   const withData = list.filter(se => se.donnees_techniques.length > 0);
 
   content.innerHTML = `
@@ -160,7 +163,6 @@ async function ficheTechniqueTab(content, v, rerender) {
       : '<p class="empty">Aucune donnée technique pour l’instant.<br>Touche « + ajouter une donnée » pour commencer.</p>'}
     <button class="btn btn-gmao" id="add-dt">+ ajouter une donnée</button>`;
 
-  // Liste déroulante des sous-ensembles (pour le formulaire d'ajout/édition)
   const seOptions = list.map(se => ({ value: se.id, label: se.nom }));
   const donneeFields = [
     { name: 'sous_ensemble_id', label: 'Sous-ensemble', type: 'select', options: seOptions },
@@ -168,7 +170,6 @@ async function ficheTechniqueTab(content, v, rerender) {
     { name: 'valeur',  label: 'Valeur', placeholder: 'ex : 10W40 semi-synthèse, 20 N·m' },
   ];
 
-  // Ajouter une donnée
   $('#add-dt').onclick = safe(async () => {
     const values = await formModal({
       title: 'Nouvelle donnée technique',
@@ -183,7 +184,6 @@ async function ficheTechniqueTab(content, v, rerender) {
     rerender();
   });
 
-  // Modifier / supprimer une donnée : appui long ou clic droit
   $$('.dt-row', content).forEach(row => {
     const open = safe(async () => {
       const d = withData.flatMap(se => se.donnees_techniques)
@@ -212,7 +212,293 @@ async function ficheTechniqueTab(content, v, rerender) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ONGLET « HISTORIQUE » — activités clôturées (affichage inchangé)
+// ONGLET « CRÉATION D'ACTIVITÉ »
+// ════════════════════════════════════════════════════════════════
+
+// État du formulaire, gardé hors de la fonction : si l'écran est
+// redessiné (synchro temps réel), la saisie en cours n'est pas perdue.
+let draft = null;
+let draftVid = null;
+let step = 1;
+
+function freshDraft() {
+  return {
+    type: 'correctif',
+    sous_ensemble_id: '',
+    organe_id: '',
+    intitule: '',
+    description: '',
+    date_debut: todayISO(),
+    date_fin: todayISO(),
+  };
+}
+
+// Panneau "fiche technique" en lecture seule (colonne de droite sur
+// ordinateur, panneau repliable sur mobile). Filtré sur un sous-ensemble
+// si "filterId" est fourni, sinon tout.
+function fichePanelHTML(seList, filterId) {
+  const list = filterId ? seList.filter(se => se.id === filterId) : seList;
+  const withData = list.filter(se => se.donnees_techniques.length > 0);
+  if (!withData.length) return '<p class="empty">Aucune donnée technique.</p>';
+  return withData.map(se => `
+    <section class="se-block">
+      <h3 class="se-name">${esc(se.nom)}</h3>
+      <div class="se-data">
+        ${se.donnees_techniques.map(d => `
+          <div class="dt-row" style="cursor:default">
+            <span class="dt-lbl">${esc(d.libelle)}</span>
+            <span class="dt-val">${esc(d.valeur ?? '')}</span>
+          </div>`).join('')}
+      </div>
+    </section>`).join('');
+}
+
+// Les champs du formulaire (version ordinateur, tout visible)
+function fieldsHTML(seList) {
+  const se = seList.find(s => s.id === draft.sous_ensemble_id);
+  const orgList = se ? se.organes : [];
+  return `
+    <label>Type
+      <select name="type">
+        ${OT_TYPES.map(t => `<option value="${t.value}" ${draft.type === t.value ? 'selected' : ''}>${esc(t.label)}</option>`).join('')}
+      </select>
+    </label>
+    <label>Sous-ensemble
+      <select name="sous_ensemble_id">
+        <option value="">— choisir —</option>
+        ${seList.map(s => `<option value="${s.id}" ${draft.sous_ensemble_id === s.id ? 'selected' : ''}>${esc(s.nom)}</option>`).join('')}
+      </select>
+    </label>
+    <label>Organe (facultatif)
+      <select name="organe_id" ${se ? '' : 'disabled'}>
+        <option value="">${se ? '— aucun —' : '— choisis d’abord un sous-ensemble —'}</option>
+        ${orgList.map(o => `<option value="${o.id}" ${draft.organe_id === o.id ? 'selected' : ''}>${esc(o.nom)}</option>`).join('')}
+      </select>
+    </label>
+    <label>Intitulé
+      <input type="text" name="intitule" value="${esc(draft.intitule)}" required placeholder="ex : Vidange moteur">
+    </label>
+    <label>Description (facultatif)
+      <textarea name="description" rows="3" placeholder="Détails, pièces à prévoir…">${esc(draft.description)}</textarea>
+    </label>
+    <div class="create-dates">
+      <label>Date de début
+        <input type="date" name="date_debut" value="${esc(draft.date_debut)}" required>
+      </label>
+      <label>Date de fin
+        <input type="date" name="date_fin" value="${esc(draft.date_fin)}" min="${esc(draft.date_debut)}" required>
+      </label>
+    </div>
+    <div class="create-statut muted">Statut à la création : <span class="v-hero-status">Planifié</span></div>`;
+}
+
+// Boutons de navigation du mode guidé (mobile)
+function navBtns(withBack) {
+  return `<div class="wiz-nav">
+    ${withBack ? '<button type="button" class="btn" id="w-back">← Retour</button>' : ''}
+    <button type="button" class="btn btn-gmao" id="w-next">Continuer →</button>
+  </div>`;
+}
+
+async function createTab(content, v, id) {
+  const seList = await db.listSousEnsembles(v.id);
+  if (!draft || draftVid !== v.id) { draft = freshDraft(); draftVid = v.id; step = 1; }
+
+  const desktop = window.matchMedia('(min-width: 1100px)').matches;
+
+  // Recopie la saisie dans "draft" à chaque frappe (rien n'est perdu si
+  // l'écran est redessiné) et garde date_fin >= date_debut.
+  const bindInputs = form => {
+    form.addEventListener('input', e => {
+      if (!e.target.name) return;
+      draft[e.target.name] = e.target.value;
+      if (e.target.name === 'date_debut') {
+        const df = form.querySelector('[name="date_fin"]');
+        if (df) {
+          df.min = draft.date_debut;
+          if (draft.date_fin < draft.date_debut) { draft.date_fin = draft.date_debut; df.value = draft.date_debut; }
+        }
+      }
+    });
+  };
+
+  const validateDates = () => {
+    if (!draft.date_debut || !draft.date_fin) { toast('Les deux dates sont obligatoires', 'error'); return false; }
+    if (draft.date_fin < draft.date_debut) { toast('La date de fin ne peut pas être avant la date de début', 'error'); return false; }
+    return true;
+  };
+
+  const save = safe(async () => {
+    if (!draft.intitule.trim()) { toast('L’intitulé est obligatoire', 'error'); return; }
+    if (!validateDates()) return;
+    await db.saveWorkOrder({
+      vehicle_id:       v.id,
+      type:             draft.type,
+      sous_ensemble_id: draft.sous_ensemble_id || null,
+      organe_id:        draft.organe_id || null,
+      subsystem:        draft.intitule.trim(),        // intitulé (affiché en gras)
+      description:      draft.description.trim() || null,
+      date:             draft.date_debut,             // pour l'ordre dans le Planning
+      date_debut:       draft.date_debut,
+      date_fin:         draft.date_fin,
+      statut:           'planifie',                   // forcé à la création
+    });
+    draft = null; draftVid = null; step = 1;
+    toast('Activité créée ✅');
+    location.hash = `#/vehicle/${id}/histo`;           // apparaît dans l'Historique
+  });
+
+  // ── Affichage ordinateur : 2 colonnes (formulaire | fiche) ──────
+  function drawDesktop() {
+    content.innerHTML = `
+      <div class="create-layout">
+        <form class="create-form card" id="c-form">
+          ${fieldsHTML(seList)}
+          <button type="submit" class="btn btn-gmao">✓ Créer l’activité</button>
+        </form>
+        <aside class="create-fiche">
+          <h3 class="se-name">📋 Fiche technique</h3>
+          ${fichePanelHTML(seList, draft.sous_ensemble_id)}
+        </aside>
+      </div>`;
+    const form = $('#c-form', content);
+    bindInputs(form);
+    form.addEventListener('change', e => {
+      if (e.target.name === 'sous_ensemble_id') {
+        draft.sous_ensemble_id = e.target.value;
+        draft.organe_id = '';
+        drawDesktop();   // met à jour la liste d'organes + le panneau fiche
+      }
+    });
+    form.addEventListener('submit', e => { e.preventDefault(); save(); });
+  }
+
+  // ── Affichage iPhone : assistant guidé, une étape à la fois ─────
+  function drawMobile() {
+    const TOTAL = 6;
+    const se = seList.find(s => s.id === draft.sous_ensemble_id);
+    let title = '', body = '', nav = '';
+
+    if (step === 1) {
+      title = 'Type d’intervention';
+      body = `<div class="wiz-options">
+        ${OT_TYPES.map(t => `
+          <button type="button" class="option-card ${draft.type === t.value ? 'selected' : ''}" data-type="${t.value}">
+            <span class="opt-ico">${TYPE_ICONS[t.value]}</span>
+            <span class="opt-txt"><span class="opt-title">${esc(t.label)}</span></span>
+          </button>`).join('')}
+      </div>`;
+      nav = '';   // choisir un type fait avancer tout seul
+    } else if (step === 2) {
+      title = 'Sous-ensemble';
+      body = `
+        <div class="chips-grid">
+          ${seList.map(s => `<button type="button" class="chip-btn ${draft.sous_ensemble_id === s.id ? 'selected' : ''}" data-se="${s.id}">${esc(s.nom)}</button>`).join('')}
+        </div>
+        <details class="create-see-fiche">
+          <summary>📋 voir la fiche technique</summary>
+          <div class="see-fiche-body">${fichePanelHTML(seList, draft.sous_ensemble_id)}</div>
+        </details>`;
+      nav = navBtns(true);
+    } else if (step === 3) {
+      title = 'Organe (facultatif)';
+      const orgList = se ? se.organes : [];
+      body = se && orgList.length
+        ? `<div class="chips-grid">
+             <button type="button" class="chip-btn ${!draft.organe_id ? 'selected' : ''}" data-org="">— aucun —</button>
+             ${orgList.map(o => `<button type="button" class="chip-btn ${draft.organe_id === o.id ? 'selected' : ''}" data-org="${o.id}">${esc(o.nom)}</button>`).join('')}
+           </div>`
+        : `<p class="muted">${se ? 'Aucun organe pour ce sous-ensemble.' : 'Aucun sous-ensemble choisi.'}<br>Cette étape est facultative, touche « Continuer ».</p>`;
+      nav = navBtns(true);
+    } else if (step === 4) {
+      title = 'Intitulé et description';
+      body = `
+        <form id="c-form" class="card" style="display:grid;gap:12px">
+          <label>Intitulé
+            <input type="text" name="intitule" value="${esc(draft.intitule)}" required placeholder="ex : Vidange moteur">
+          </label>
+          <label>Description (facultatif)
+            <textarea name="description" rows="4" placeholder="Détails, pièces à prévoir…">${esc(draft.description)}</textarea>
+          </label>
+        </form>`;
+      nav = navBtns(true);
+    } else if (step === 5) {
+      title = 'Dates';
+      body = `
+        <form id="c-form" class="card" style="display:grid;gap:12px">
+          <label>Date de début
+            <input type="date" name="date_debut" value="${esc(draft.date_debut)}" required>
+          </label>
+          <label>Date de fin
+            <input type="date" name="date_fin" value="${esc(draft.date_fin)}" min="${esc(draft.date_debut)}" required>
+          </label>
+        </form>`;
+      nav = navBtns(true);
+    } else {
+      title = 'Récapitulatif';
+      const org = se && draft.organe_id ? se.organes.find(o => o.id === draft.organe_id) : null;
+      const rows = [
+        ['Type',          label(OT_TYPES, draft.type)],
+        ['Sous-ensemble', se ? se.nom : '—'],
+        ['Organe',        org ? org.nom : '—'],
+        ['Intitulé',      draft.intitule || '—'],
+        ['Description',   draft.description || '—'],
+        ['Début',         fmtDate(draft.date_debut)],
+        ['Fin',           fmtDate(draft.date_fin)],
+        ['Statut',        'Planifié'],
+      ];
+      body = `<div class="card recap-list">
+        ${rows.map(([l, val]) => `<div class="rec-row"><span class="rec-lbl">${l}</span><span class="grow" style="white-space:pre-wrap">${esc(val)}</span></div>`).join('')}
+      </div>`;
+      nav = `<div class="wiz-nav">
+        <button type="button" class="btn" id="w-back">← Retour</button>
+        <button type="button" class="btn btn-gmao" id="w-save">✓ Créer l’activité</button>
+      </div>`;
+    }
+
+    content.innerHTML = `
+      <div class="wiz-progress">
+        <div class="bar"><span style="width:${step / TOTAL * 100}%"></span></div>
+        <span class="muted">${step}/${TOTAL}</span>
+      </div>
+      <h2 class="wiz-step-title">${esc(title)}</h2>
+      ${body}
+      ${nav}`;
+
+    const advance = () => {
+      if (step === 4 && !draft.intitule.trim()) { toast('L’intitulé est obligatoire', 'error'); return; }
+      if (step === 5 && !validateDates()) return;
+      step++; drawMobile();
+    };
+
+    const back = $('#w-back', content);
+    if (back) back.onclick = () => { if (step > 1) { step--; drawMobile(); } };
+    const nextBtn = $('#w-next', content);
+    if (nextBtn) nextBtn.onclick = advance;
+    const saveBtn = $('#w-save', content);
+    if (saveBtn) saveBtn.onclick = save;
+
+    if (step === 1) {
+      $$('[data-type]', content).forEach(b => b.onclick = () => { draft.type = b.dataset.type; step = 2; drawMobile(); });
+    } else if (step === 2) {
+      $$('[data-se]', content).forEach(b => b.onclick = () => {
+        draft.sous_ensemble_id = (draft.sous_ensemble_id === b.dataset.se) ? '' : b.dataset.se;
+        draft.organe_id = '';
+        drawMobile();   // met à jour la sélection + le panneau repliable
+      });
+    } else if (step === 3) {
+      $$('[data-org]', content).forEach(b => b.onclick = () => { draft.organe_id = b.dataset.org; drawMobile(); });
+    } else if (step === 4 || step === 5) {
+      bindInputs($('#c-form', content));
+    }
+  }
+
+  if (desktop) drawDesktop();
+  else drawMobile();
+}
+
+// ════════════════════════════════════════════════════════════════
+// ONGLET « HISTORIQUE » — toutes les activités du véhicule
 // ════════════════════════════════════════════════════════════════
 
 // Carte d'une activité (partagée avec les écrans qui listent des OT)
@@ -223,7 +509,7 @@ function otCard(ot) {
     <a class="card" href="#/ot/${ot.id}">
       <div class="row">
         <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
-        <span class="chip st-${ot.status}">${esc(label(OT_STATUS, ot.status))}</span>
+        <span class="chip st-${ot.statut}">${esc(label(OT_STATUS, ot.statut))}</span>
         <span class="grow"></span>
         <span class="muted">${fmtDate(ot.date)}</span>
       </div>
@@ -238,10 +524,12 @@ function otCard(ot) {
 }
 
 async function histoTab(content, v) {
-  const ots = (await db.listWorkOrders(v.id)).filter(o => o.status === 'cloture');
+  // Toutes les activités, la plus récente en haut (listWorkOrders trie
+  // déjà par date décroissante).
+  const ots = await db.listWorkOrders(v.id);
   content.innerHTML = ots.length
     ? ots.map(otCard).join('')
-    : '<p class="empty">Aucune activité terminée pour l’instant.<br>Les activités clôturées se rangeront ici. ✅</p>';
+    : '<p class="empty">Aucune activité pour ce véhicule.<br>Crée-en une depuis l’onglet « Création d’activité ».</p>';
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -251,7 +539,7 @@ async function histoTab(content, v) {
 
 // ── Onglet : activités en cours ou prévues ──────────────────────
 async function otTab(content, addBtn, v) {
-  const ots = (await db.listWorkOrders(v.id)).filter(o => o.status !== 'cloture');
+  const ots = (await db.listWorkOrders(v.id)).filter(o => o.statut !== 'cloture');
 
   content.innerHTML = ots.length
     ? ots.map(otCard).join('')
@@ -261,7 +549,7 @@ async function otTab(content, addBtn, v) {
     const values = await formModal({
       title: 'Nouvelle activité',
       fields: otFields,
-      values: { type: 'correctif', status: 'ouvert', date: todayISO(), km: v.km },
+      values: { type: 'correctif', statut: 'planifie', date: todayISO(), km: v.km },
     });
     if (!values) return;
     const ot = await db.saveWorkOrder({ ...values, vehicle_id: v.id });
@@ -274,7 +562,6 @@ async function otTab(content, addBtn, v) {
 async function dueTab(content, addBtn, v, rerender) {
   const items = await db.listDeadlines(v.id);
 
-  // Tri : en retard d'abord, puis proches, puis OK
   const order = { late: 0, soon: 1, ok: 2 };
   items.sort((a, b) => order[dueStatus(a, v.km)] - order[dueStatus(b, v.km)]);
 

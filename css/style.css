@@ -116,8 +116,8 @@ a.card:active { background: var(--panel-2); }
 .badge.type-correctif   { background: #FFF7ED; color: var(--accent); }
 .badge.type-amelioratif { background: #F5F3FF; color: var(--violet); }
 
-/* Statut d'une activité : gris = à faire, ambre = en cours, vert = terminé */
-.chip.st-ouvert   { background: var(--panel-2);              color: var(--muted); }
+/* Statut d'une activité : gris = planifié, ambre = en cours, vert = terminé */
+.chip.st-planifie { background: var(--panel-2);              color: var(--muted); }
 .chip.st-en_cours { background: rgba(245, 158, 11, .12);     color: #B45309; }
 .chip.st-cloture  { background: rgba(22, 163, 74, .1);       color: var(--green); }
 
@@ -569,6 +569,31 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   font-weight: 700; box-shadow: none;
 }
 .btn-gmao:active { background: #D9A404; }
+
+/* ── Onglet Création d'activité ────────────────────────────── */
+.create-layout { display: grid; gap: 16px; }
+.create-form { display: grid; gap: 14px; }
+.create-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.create-statut { font-size: .85rem; }
+.create-fiche { display: grid; gap: 12px; align-content: start; }
+
+/* Deux colonnes côte à côte sur grand écran : formulaire | fiche */
+@media (min-width: 1100px) {
+  .create-layout { grid-template-columns: 1.35fr 1fr; align-items: start; }
+}
+
+/* Panneau repliable "voir la fiche technique" (mobile, étape 2) */
+.create-see-fiche { margin-top: 4px; }
+.create-see-fiche > summary {
+  cursor: pointer; list-style: none;
+  color: #F2B705; font-weight: 600; font-size: .9rem; padding: 10px 0;
+}
+.create-see-fiche > summary::-webkit-details-marker { display: none; }
+.see-fiche-body { display: grid; gap: 12px; margin-top: 8px; }
+
+/* Barre de boutons de l'assistant guidé */
+.wiz-nav { display: flex; gap: 10px; margin-top: 18px; }
+.wiz-nav .btn { flex: 1; }
 
 /* ── Écrans plus larges (ordinateur) ───────────────────────── */
 @media (min-width: 700px) {

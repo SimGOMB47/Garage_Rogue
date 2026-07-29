@@ -20,7 +20,7 @@ export async function renderWorkOrder(root, id, mode) {
 
   root.innerHTML = `
     <header class="topbar">
-      <a class="icon-btn" href="#/vehicle/${ot.vehicle_id}/ot" title="Retour">←</a>
+      <a class="icon-btn" href="#/vehicle/${ot.vehicle_id}/histo" title="Retour">←</a>
       <h1 class="grow">${isNew ? 'Nouvelle activité' : `OT du ${fmtDate(ot.date)}`}</h1>
       <button class="icon-btn" id="edit-ot" title="Modifier l’OT">✎</button>
     </header>
@@ -29,15 +29,15 @@ export async function renderWorkOrder(root, id, mode) {
       <section class="card">
         <div class="row">
           <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
-          <span class="chip st-${ot.status}">${esc(label(OT_STATUS, ot.status))}</span>
+          <span class="chip st-${ot.statut}">${esc(label(OT_STATUS, ot.statut))}</span>
           <span class="grow"></span>
           <span class="muted">${ot.km != null ? fmtKm(ot.km) : ''}</span>
         </div>
         ${ot.subsystem ? `<div><strong>${esc(ot.subsystem)}</strong></div>` : ''}
         ${ot.description ? `<div style="white-space:pre-wrap">${esc(ot.description)}</div>` : ''}
-        ${isNew ? '' : ot.status === 'ouvert' ? `
+        ${isNew ? '' : ot.statut === 'planifie' ? `
           <button class="btn btn-primary st-action" id="st-action">▶ Commencer l’activité</button>`
-        : ot.status === 'en_cours' ? `
+        : ot.statut === 'en_cours' ? `
           <button class="btn btn-done st-action" id="st-action">✓ Terminer l’activité</button>`
         : `
           <div class="done-banner">✅ Activité terminée — rangée dans l’historique du véhicule
@@ -99,8 +99,8 @@ export async function renderWorkOrder(root, id, mode) {
   const stBtn = $('#st-action');
   if (stBtn) {
     stBtn.onclick = safe(async () => {
-      const next = ot.status === 'ouvert' ? 'en_cours' : 'cloture';
-      await db.saveWorkOrder({ status: next }, id);
+      const next = ot.statut === 'planifie' ? 'en_cours' : 'cloture';
+      await db.saveWorkOrder({ statut: next }, id);
       if (next === 'cloture') {
         toast('Activité terminée ✅ — rangée dans l’Historique');
         location.hash = `#/vehicle/${ot.vehicle_id}/histo`;  // montre l'historique
@@ -115,7 +115,7 @@ export async function renderWorkOrder(root, id, mode) {
   const reopenBtn = $('#reopen');
   if (reopenBtn) {
     reopenBtn.onclick = safe(async () => {
-      await db.saveWorkOrder({ status: 'ouvert' }, id);
+      await db.saveWorkOrder({ statut: 'planifie' }, id);
       toast('Activité rouverte');
       rerender();
     });
@@ -133,7 +133,7 @@ export async function renderWorkOrder(root, id, mode) {
       if (await confirmModal('Supprimer cet ordre de travail, ses pièces et ses photos ?')) {
         await db.deleteWorkOrder(id);
         toast('OT supprimé');
-        location.hash = `#/vehicle/${ot.vehicle_id}/ot`;
+        location.hash = `#/vehicle/${ot.vehicle_id}/histo`;
       }
     } else if (res) {
       await db.saveWorkOrder(res, id);

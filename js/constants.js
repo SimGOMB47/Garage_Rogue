@@ -13,7 +13,7 @@ export const OT_TYPES = [
 ];
 
 export const OT_STATUS = [
-  { value: 'ouvert',   label: 'Ouvert' },
+  { value: 'planifie', label: 'Planifié' },
   { value: 'en_cours', label: 'En cours' },
   { value: 'cloture',  label: 'Clôturé' },
 ];
@@ -63,7 +63,7 @@ export const otFields = [
   { name: 'date',        label: 'Date', type: 'date', required: true },
   { name: 'km',          label: 'Kilométrage', type: 'number', step: '1' },
   { name: 'description', label: 'Description', type: 'textarea' },
-  { name: 'status',      label: 'Statut', type: 'select', options: OT_STATUS },
+  { name: 'statut',      label: 'Statut', type: 'select', options: OT_STATUS },
 ];
 
 export const deadlineFields = [
