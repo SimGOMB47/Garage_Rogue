@@ -178,26 +178,9 @@ where not exists (
 
 
 -- ============================================================
--- ⚠️ SECTION FACULTATIVE — NE PAS EXÉCUTER MAINTENANT
+-- NOTE — Conversion des anciens statuts
 --
--- Conversion des anciens statuts vers la nouvelle colonne "statut".
--- Ton appli utilise encore la colonne "status" (anglaise). Cette
--- partie recopierait ces valeurs dans la nouvelle colonne "statut"
--- selon la correspondance :
---     'ouvert'   →  'planifie'
---     'en_cours' →  'en_cours'
---     'cloture'  →  'cloture'
---
--- Elle est laissée en COMMENTAIRE volontairement : à n'exécuter
--- QU'APRÈS ta validation de cette correspondance. Pour l'activer
--- plus tard, enlève le /* du début et le */ de la fin.
+-- La correspondance 'ouvert'->'planifie', 'en_cours'->'en_cours',
+-- 'cloture'->'cloture' a été validée le 2026-07-29 et déplacée dans
+-- son propre fichier : migration_gmao_02_statuts.sql.
 -- ============================================================
-/*
-update public.work_orders
-   set statut = case status
-                  when 'ouvert'   then 'planifie'
-                  when 'en_cours' then 'en_cours'
-                  when 'cloture'  then 'cloture'
-                end
- where statut is null;
-*/
