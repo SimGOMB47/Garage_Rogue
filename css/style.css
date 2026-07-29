@@ -125,18 +125,20 @@ a.card:active { background: var(--panel-2); }
 .warn-chip.late { color: var(--red); }
 .warn-chip.soon { color: #B45309; }
 
-/* ── Onglets ───────────────────────────────────────────────── */
+/* ── Onglets (barre défilante sur iPhone) ──────────────────── */
 .tabs {
-  display: flex; position: sticky; top: 0; z-index: 9;
-  background: var(--bg); border-bottom: 1px solid rgba(255, 255, 255, .12);
+  display: flex; flex-wrap: nowrap; overflow-x: auto;
+  position: sticky; top: 0; z-index: 9;
+  background: #17191B; border-bottom: 1px solid rgba(255, 255, 255, .12);
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tabs a {
-  flex: 1; text-align: center; padding: 12px 2px;
-  font-size: .76rem; font-weight: 600; color: #C4CAD2;
-  border-bottom: 2px solid transparent;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 0 0 auto; text-align: center; padding: 13px 16px;
+  font-size: .82rem; font-weight: 600; color: #9AA0A6;
+  border-bottom: 2px solid transparent; white-space: nowrap;
 }
-.tabs a.active { color: #FF7A2F; border-bottom-color: var(--accent); }
+.tabs a.active { color: #F2B705; border-bottom-color: #F2B705; }
 
 /* ── Échéances ─────────────────────────────────────────────── */
 .due-item { border-left: 4px solid var(--green); width: 100%; text-align: left; cursor: pointer; }
@@ -489,6 +491,84 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   background: var(--accent); min-height: 2px;
 }
 .chart-col .chart-lbl { font-size: .68rem; color: var(--muted); text-transform: uppercase; }
+
+/* ── Page véhicule GMAO : en-tête photo + fiche technique ───── */
+.v-hero { background: #17191B; }
+.v-hero-photo {
+  position: relative; height: 220px;
+  background: #2A2E33; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.v-hero-photo img { width: 100%; height: 100%; object-fit: cover; }
+.v-hero-photo.no-photo span { color: #7A8088; font-size: .95rem; letter-spacing: .02em; }
+
+.hero-btn {
+  position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px);
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(0, 0, 0, .5); color: #fff !important;
+  border: none; font-size: 1.05rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.hero-back { left: 12px; }
+.hero-edit { right: 12px; }
+.hero-cam {
+  position: absolute; right: 12px; bottom: 12px;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0, 0, 0, .5); color: #fff; font-size: .85rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; backdrop-filter: blur(4px);
+}
+
+.v-hero-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; background: #17191B; color: #fff;
+}
+.v-hero-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.v-hero-name {
+  font-weight: 800; font-size: 1.15rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v-hero-status {
+  background: #F2B705; color: #17191B;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+.v-hero-right {
+  margin-left: auto; text-align: right; flex-shrink: 0;
+  color: #C4CAD2; font-size: .82rem;
+}
+@media (max-width: 640px) {
+  .v-hero-photo { height: 90px; }
+}
+
+/* Fiche technique : blocs sombres, titres jaunes, valeurs blanches */
+.se-block {
+  background: #17191B; border: 1px solid #2A2E33;
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.se-name {
+  margin: 0 0 6px; color: #F2B705;
+  font-size: 1rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0;
+}
+.se-data { display: grid; }
+.dt-row {
+  display: flex; justify-content: space-between; gap: 14px;
+  padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  cursor: pointer;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+.dt-row:last-child { border-bottom: none; }
+.dt-row:active { background: rgba(255, 255, 255, .04); }
+.dt-lbl { color: #9AA0A6; font-size: .9rem; }
+.dt-val { color: #fff; font-weight: 600; text-align: right; }
+
+.btn-gmao {
+  background: #F2B705; color: #17191B; border: none;
+  font-weight: 700; box-shadow: none;
+}
+.btn-gmao:active { background: #D9A404; }
 
 /* ── Écrans plus larges (ordinateur) ───────────────────────── */
 @media (min-width: 700px) {

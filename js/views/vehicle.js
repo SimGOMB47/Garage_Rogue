@@ -1,4 +1,13 @@
-// ── Fiche véhicule : 4 onglets (OT, échéances, stock, fiche) ────
+// ── Fiche véhicule : en-tête photo + 4 onglets (GMAO) ───────────
+//
+// Onglets : Création d'activité | Fiche technique | Historique | Stock
+//  - "Création d'activité" et "Stock de pièces" : à venir (prochain prompt)
+//  - "Fiche technique" : sous-ensembles + données techniques (construit ici)
+//  - "Historique" : réutilise l'affichage des activités clôturées
+//
+// Note : les anciens onglets (Activités, Échéances, Stock, Fiche specs)
+// sont conservés plus bas dans le fichier — hors interface pour l'instant —
+// afin de les rebrancher facilement au prochain prompt.
 
 import * as db from '../db.js';
 import {
@@ -10,48 +19,66 @@ import {
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
-export async function renderVehicle(root, id, tab = 'ot') {
-  const [v, cost] = await Promise.all([db.getVehicle(id), db.getVehicleCost(id)]);
+// Les 4 onglets de la nouvelle page véhicule
+const TABS = [
+  ['create', 'Création d’activité'],
+  ['fiche',  'Fiche technique'],
+  ['histo',  'Historique'],
+  ['stock',  'Stock de pièces'],
+];
+
+// Appui long (mobile) ou clic droit (ordinateur) sur un élément → action
+function longPress(el, handler) {
+  let timer;
+  const start = () => { timer = setTimeout(handler, 500); };
+  const cancel = () => clearTimeout(timer);
+  el.addEventListener('touchstart', start, { passive: true });
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('contextmenu', e => { e.preventDefault(); handler(); });
+}
+
+export async function renderVehicle(root, id, tab = 'fiche') {
+  // Onglet par défaut = Fiche technique ; on ramène tout onglet inconnu
+  // (ancien lien /ot, /due…) sur un onglet valide.
+  if (!TABS.some(([t]) => t === tab)) tab = 'fiche';
+
+  const v = await db.getVehicle(id);
   const photoUrl = v.photo_path
     ? (await db.photoUrls([{ path: v.photo_path }]))[v.photo_path]
     : null;
-  const brandModel = [v.brand, v.model].filter(Boolean).join(' ');
-  const meta = [brandModel, v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
 
-  const tabs = [
-    ['ot', 'Activités'],
-    ['due', 'Échéances'],
-    ['stock', 'Stock'],
-    ['fiche', 'Fiche'],
-    ['histo', 'Historique'],
-  ];
+  const heroBits = [];
+  if (v.year) heroBits.push(v.year);
+  heroBits.push(fmtKm(v.km));
+  if (v.plate) heroBits.push(v.plate);
+  const heroMeta = heroBits.filter(Boolean).map(esc).join(' · ');
 
   root.innerHTML = `
-    <header class="topbar">
-      <a class="icon-btn" href="#/vehicles" title="Retour">←</a>
-      <h1 class="grow">${vehicleIcon(v.type)} ${esc(v.name)}</h1>
-      <button class="icon-btn" id="edit-vehicle" title="Modifier le véhicule">✎</button>
-    </header>
-    <section class="vehicle-summary">
-      <button class="v-avatar" id="v-avatar" title="Photo du véhicule">
-        ${photoUrl
-          ? `<img src="${esc(photoUrl)}" alt="">`
-          : `<span class="ico">${vehicleIcon(v.type)}</span>`}
-        <span class="v-avatar-badge">📷</span>
-      </button>
+    <header class="v-hero">
+      <div class="v-hero-photo${photoUrl ? '' : ' no-photo'}">
+        ${photoUrl ? `<img src="${esc(photoUrl)}" alt="">` : '<span>aucune photo</span>'}
+        <a class="hero-btn hero-back" href="#/vehicles" title="Retour">←</a>
+        <button class="hero-btn hero-edit" id="edit-vehicle" title="Modifier le véhicule">✎</button>
+        <span class="hero-cam" id="v-cam" title="Photo du véhicule">📷</span>
+      </div>
       <input type="file" accept="image/*" id="v-photo-input" hidden>
-      <span class="badge st-${v.status}">${esc(label(VEHICLE_STATUS, v.status))}</span>
-      <span>${fmtKm(v.km)}</span>
-      <span class="grow"></span>
-      <span class="cost">${fmtMoney(cost)}</span>
-      ${meta ? `<div class="muted">${meta}</div>` : ''}
-    </section>
+      <div class="v-hero-bar">
+        <div class="v-hero-title">
+          <span class="v-hero-name">${vehicleIcon(v.type)} ${esc(v.name)}</span>
+          <span class="v-hero-status">${esc(label(VEHICLE_STATUS, v.status))}</span>
+        </div>
+        <div class="v-hero-right">${heroMeta}</div>
+      </div>
+    </header>
     <nav class="tabs">
-      ${tabs.map(([t, l]) =>
-        `<a href="#/vehicle/${id}/${t}" class="${t === tab ? 'active' : ''}">${l}</a>`).join('')}
+      ${TABS.map(([t, l]) =>
+        `<a href="#/vehicle/${id}/${t}" class="${t === tab ? 'active' : ''}">${esc(l)}</a>`).join('')}
     </nav>
-    <main class="page" id="tab-content"></main>
-    <button class="fab" id="add" title="Ajouter">+</button>`;
+    <main class="page" id="tab-content"></main>`;
+
+  const content = $('#tab-content');
+  const rerender = () => renderVehicle(root, id, tab);
 
   // Modifier / supprimer le véhicule
   $('#edit-vehicle').onclick = safe(async () => {
@@ -71,18 +98,12 @@ export async function renderVehicle(root, id, tab = 'ot') {
     } else if (res) {
       await db.saveVehicle(res, id);
       toast('Véhicule enregistré');
-      renderVehicle(root, id, tab);
+      rerender();
     }
   });
 
-  const content = $('#tab-content');
-  const addBtn = $('#add');
-  const rerender = () => renderVehicle(root, id, tab);
-
-  // ── Photo du véhicule ─────────────────────────────────────────
-  // Toucher l'avatar : voir la photo en grand, la changer (galerie
-  // ou appareil photo) ou revenir au symbole.
-  $('#v-avatar').onclick = safe(async () => {
+  // Photo du véhicule : voir/changer/retirer
+  $('#v-cam').onclick = safe(async () => {
     if (!v.photo_path) return $('#v-photo-input').click();
     const res = await formModal({
       title: 'Photo du véhicule',
@@ -108,14 +129,93 @@ export async function renderVehicle(root, id, tab = 'ot') {
     rerender();
   });
 
-  if (tab === 'due') await dueTab(content, addBtn, v, rerender);
-  else if (tab === 'stock') await stockTab(content, addBtn, v, rerender);
-  else if (tab === 'fiche') await ficheTab(content, addBtn, v, rerender);
-  else if (tab === 'histo') await histoTab(content, addBtn, v);
-  else await otTab(content, addBtn, v);
+  // Contenu de l'onglet courant
+  if (tab === 'fiche') await ficheTechniqueTab(content, v, rerender);
+  else if (tab === 'histo') await histoTab(content, v);
+  else content.innerHTML = '<p class="empty">🚧 À venir<br>Cet onglet sera construit prochainement.</p>';
 }
 
-// Carte d'une activité (partagée entre Activités et Historique)
+// ════════════════════════════════════════════════════════════════
+// ONGLET « FICHE TECHNIQUE » — sous-ensembles + données techniques
+// ════════════════════════════════════════════════════════════════
+async function ficheTechniqueTab(content, v, rerender) {
+  const list = await db.listSousEnsembles(v.id);
+  // On n'affiche que les sous-ensembles qui ont au moins une donnée
+  // (sinon 11 titres vides).
+  const withData = list.filter(se => se.donnees_techniques.length > 0);
+
+  content.innerHTML = `
+    ${withData.length
+      ? withData.map(se => `
+        <section class="se-block">
+          <h3 class="se-name">${esc(se.nom)}</h3>
+          <div class="se-data">
+            ${se.donnees_techniques.map(d => `
+              <div class="dt-row" data-id="${d.id}">
+                <span class="dt-lbl">${esc(d.libelle)}</span>
+                <span class="dt-val">${esc(d.valeur ?? '')}</span>
+              </div>`).join('')}
+          </div>
+        </section>`).join('')
+      : '<p class="empty">Aucune donnée technique pour l’instant.<br>Touche « + ajouter une donnée » pour commencer.</p>'}
+    <button class="btn btn-gmao" id="add-dt">+ ajouter une donnée</button>`;
+
+  // Liste déroulante des sous-ensembles (pour le formulaire d'ajout/édition)
+  const seOptions = list.map(se => ({ value: se.id, label: se.nom }));
+  const donneeFields = [
+    { name: 'sous_ensemble_id', label: 'Sous-ensemble', type: 'select', options: seOptions },
+    { name: 'libelle', label: 'Libellé', required: true, placeholder: 'ex : Huile, Couple bouchon vidange' },
+    { name: 'valeur',  label: 'Valeur', placeholder: 'ex : 10W40 semi-synthèse, 20 N·m' },
+  ];
+
+  // Ajouter une donnée
+  $('#add-dt').onclick = safe(async () => {
+    const values = await formModal({
+      title: 'Nouvelle donnée technique',
+      fields: donneeFields,
+      values: { sous_ensemble_id: seOptions[0]?.value },
+    });
+    if (!values) return;
+    const se = list.find(x => x.id === values.sous_ensemble_id);
+    const ordre = se ? se.donnees_techniques.length : 0;
+    await db.saveDonnee({ ...values, ordre });
+    toast('Donnée ajoutée');
+    rerender();
+  });
+
+  // Modifier / supprimer une donnée : appui long ou clic droit
+  $$('.dt-row', content).forEach(row => {
+    const open = safe(async () => {
+      const d = withData.flatMap(se => se.donnees_techniques)
+        .find(x => x.id === row.dataset.id);
+      if (!d) return;
+      const res = await formModal({
+        title: 'Modifier la donnée',
+        fields: donneeFields,
+        values: d,
+        dangerLabel: 'Supprimer cette donnée',
+      });
+      if (res === 'DANGER') {
+        if (await confirmModal(`Supprimer « ${d.libelle} » ?`)) {
+          await db.deleteDonnee(d.id);
+          toast('Donnée supprimée');
+          rerender();
+        }
+      } else if (res) {
+        await db.saveDonnee(res, d.id);
+        toast('Donnée enregistrée');
+        rerender();
+      }
+    });
+    longPress(row, open);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// ONGLET « HISTORIQUE » — activités clôturées (affichage inchangé)
+// ════════════════════════════════════════════════════════════════
+
+// Carte d'une activité (partagée avec les écrans qui listent des OT)
 function otCard(ot) {
   const cost = (ot.work_order_parts || [])
     .reduce((s, p) => s + Number(p.price) * Number(p.qty), 0);
@@ -137,6 +237,18 @@ function otCard(ot) {
     </a>`;
 }
 
+async function histoTab(content, v) {
+  const ots = (await db.listWorkOrders(v.id)).filter(o => o.status === 'cloture');
+  content.innerHTML = ots.length
+    ? ots.map(otCard).join('')
+    : '<p class="empty">Aucune activité terminée pour l’instant.<br>Les activités clôturées se rangeront ici. ✅</p>';
+}
+
+// ════════════════════════════════════════════════════════════════
+// ANCIENS ONGLETS — conservés hors interface, à rebrancher plus tard
+// (Activités, Échéances, Stock, Fiche technique "specs").
+// ════════════════════════════════════════════════════════════════
+
 // ── Onglet : activités en cours ou prévues ──────────────────────
 async function otTab(content, addBtn, v) {
   const ots = (await db.listWorkOrders(v.id)).filter(o => o.status !== 'cloture');
@@ -156,16 +268,6 @@ async function otTab(content, addBtn, v) {
     toast('Activité créée — ajoute pièces et photos');
     location.hash = `#/ot/${ot.id}`;
   });
-}
-
-// ── Onglet : historique (activités terminées) ───────────────────
-async function histoTab(content, addBtn, v) {
-  addBtn.style.display = 'none'; // on ne crée rien depuis l'historique
-  const ots = (await db.listWorkOrders(v.id)).filter(o => o.status === 'cloture');
-
-  content.innerHTML = ots.length
-    ? ots.map(otCard).join('')
-    : '<p class="empty">Aucune activité terminée pour l’instant.<br>Les activités clôturées se rangeront ici. ✅</p>';
 }
 
 // ── Onglet : échéances préventives ──────────────────────────────
@@ -192,7 +294,6 @@ async function dueTab(content, addBtn, v, rerender) {
         </button>`).join('')
       : '<p class="empty">Aucune échéance programmée.<br>Touche + pour en ajouter une (vidange, contrôle technique…).</p>'}`;
 
-  // Toucher une échéance → la modifier ou la supprimer
   $$('.due-item', content).forEach(el => {
     el.onclick = safe(async () => {
       const d = items.find(x => x.id === el.dataset.id);
@@ -209,8 +310,6 @@ async function dueTab(content, addBtn, v, rerender) {
           rerender();
         }
       } else if (res) {
-        // Si la date change, on ré-arme la création automatique
-        // (une nouvelle activité sera créée 1 mois avant la nouvelle date)
         if (res.due_date !== d.due_date) res.work_order_id = null;
         await db.saveDeadline(res, d.id);
         toast('Échéance enregistrée');
@@ -249,7 +348,6 @@ async function stockTab(content, addBtn, v, rerender) {
   $$('.stock-row', content).forEach(row => {
     const p = items.find(x => x.id === row.dataset.id);
 
-    // Boutons − / + : ajuste la quantité directement
     $$('.qty-btn', row).forEach(btn => {
       btn.onclick = safe(async () => {
         const newQty = Math.max(0, Number(p.qty) + Number(btn.dataset.delta));
@@ -258,7 +356,6 @@ async function stockTab(content, addBtn, v, rerender) {
       });
     });
 
-    // Toucher le nom → modifier ou supprimer
     $('[data-edit]', row).onclick = safe(async () => {
       const res = await formModal({
         title: 'Modifier la pièce',
@@ -293,8 +390,8 @@ async function stockTab(content, addBtn, v, rerender) {
   });
 }
 
-// ── Onglet : fiche technique ────────────────────────────────────
-async function ficheTab(content, addBtn, v, rerender) {
+// ── Onglet : ancienne fiche technique (vehicle_specs) ───────────
+async function specTab(content, addBtn, v, rerender) {
   const specs = await db.listSpecs(v.id);
   const urls = await db.photoUrls(
     specs.filter(s => s.photo_path).map(s => ({ path: s.photo_path })));
@@ -322,7 +419,6 @@ async function ficheTab(content, addBtn, v, rerender) {
     el.onclick = safe(async e => {
       const s = specs.find(x => x.id === el.dataset.id);
 
-      // Toucher la photo : la voir en grand ou la retirer
       if (e.target.hasAttribute('data-photo')) {
         const res = await formModal({
           title: 'Photo de la fiche',
@@ -340,7 +436,6 @@ async function ficheTab(content, addBtn, v, rerender) {
         return;
       }
 
-      // Toucher la fiche : la modifier ou la supprimer
       const res = await formModal({
         title: 'Modifier la fiche technique',
         fields: specFields,

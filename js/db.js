@@ -415,6 +415,37 @@ export async function deleteSpec(spec) {
   check(await supabase.from('vehicle_specs').delete().eq('id', spec.id));
 }
 
+// ── Sous-ensembles & données techniques (GMAO) ──────────────────
+// Un véhicule a des sous-ensembles (Moteur, Freinage…). Chaque
+// sous-ensemble contient des données techniques (libellé + valeur).
+// On rapporte les deux d'un coup, et on trie les données par "ordre".
+export function listSousEnsembles(vehicleId) {
+  return cached(`se:${vehicleId}`, async () => {
+    const rows = check(
+      await supabase.from('sous_ensembles')
+        .select('*, donnees_techniques(*)')
+        .eq('vehicule_id', vehicleId)
+        .order('ordre')
+    );
+    rows.forEach(se => {
+      se.donnees_techniques = (se.donnees_techniques || [])
+        .sort((a, b) => a.ordre - b.ordre);
+    });
+    return rows;
+  });
+}
+
+export async function saveDonnee(values, id = null) {
+  clearCache();
+  if (id) return check(await supabase.from('donnees_techniques').update(values).eq('id', id).select().single());
+  return check(await supabase.from('donnees_techniques').insert(values).select().single());
+}
+
+export async function deleteDonnee(id) {
+  clearCache();
+  check(await supabase.from('donnees_techniques').delete().eq('id', id));
+}
+
 // ── Synchronisation temps réel ──────────────────────────────────
 // Appelle "callback" dès qu'une ligne change dans la base
 // (modification faite par l'autre personne, ou par soi-même).
