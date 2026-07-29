@@ -21,6 +21,7 @@
   --radius: 12px;
   --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-w: 640px;         /* largeur de l'app — élargie sur ordinateur, tout en bas du fichier */
 }
 
 * { box-sizing: border-box; }
@@ -39,7 +40,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { max-width: 640px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
+#app { max-width: var(--app-w); margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
 
 h1 { font-size: 1.5rem; font-weight: 800; margin: 0; }
 h2 { font-size: .8rem; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
@@ -297,7 +298,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 /* ── Barre d'onglets en bas (navigation principale) ────────── */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  max-width: 640px; margin: 0 auto;
+  max-width: var(--app-w); margin: 0 auto;
   display: flex; justify-content: space-around; align-items: stretch;
   background: rgba(242, 243, 245, .97);
   backdrop-filter: blur(8px);
@@ -599,4 +600,44 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 @media (min-width: 700px) {
   .overlay { align-items: center; padding: 24px; }
   .modal { border-radius: 18px; max-width: 480px; }
+}
+
+/* ── Ordinateur : l'app s'élargit ──────────────────────────────
+   Au-delà de 1100px, l'app passe de 640px à 1100px. Les cartes se
+   répartissent alors sur 2 colonnes au lieu de s'étirer sur toute
+   la largeur (une carte de 1100px de large serait illisible).
+   Les titres de section, grilles et bandeaux gardent, eux, toute
+   la largeur grâce à `grid-column: 1 / -1`. */
+@media (min-width: 1100px) {
+  :root { --app-w: 1100px; }
+
+  /* Le bouton flottant + suit le bord droit de l'app, pas celui de l'écran */
+  .fab { right: max(18px, calc(50vw - var(--app-w) / 2 + 18px)); }
+
+  /* Une photo de véhicule plus haute, la bande étant plus large */
+  .v-hero-photo { height: 280px; }
+
+  /* Les cartes sur 2 colonnes */
+  .page { grid-template-columns: 1fr 1fr; }
+
+  /* …sauf ce qui doit rester pleine largeur */
+  .page > h2,
+  .page > .empty,
+  .page > .summary,
+  .page > .hub-grid,
+  .page > .stat-grid,
+  .page > .chips-grid,
+  .page > .wiz-options,
+  .page > .wiz-progress,
+  .page > .wiz-step-title,
+  .page > .wiz-nav,
+  .page > .create-layout,
+  .page > .vehicle-summary { grid-column: 1 / -1; }
+
+  /* Les tuiles tiennent sur une seule ligne au lieu de deux */
+  .hub-grid,
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* Choix du véhicule (bouton ＋ Créer) : 2 par ligne */
+  .wiz-options { grid-template-columns: 1fr 1fr; }
 }
