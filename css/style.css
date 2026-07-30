@@ -1,28 +1,35 @@
 /* ════════════════════════════════════════════════════════════
-   Garage de Rogué — thème clair épuré, mobile d'abord
-   Palette : fond #FAFAFA, cartes blanches, accent orange unique,
-   statuts vert / ambre / rouge. Références : Fleetio, Linear.
+   Garage de Rogué — thème SOMBRE, mobile d'abord
+   Palette unique, définie une seule fois ici : tout le reste du
+   fichier utilise ces variables. Pour changer une couleur dans
+   toute l'application, il suffit de la modifier ci-dessous.
    ════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg: #454D57;          /* gris ardoise foncé */
-  --panel: #F2F3F5;       /* cartes gris très léger */
-  --panel-2: #E4E6E9;     /* fonds secondaires (boutons discrets) */
-  --border: #D9DCE0;
-  --text: #1F2937;        /* gris foncé (titres, texte) */
-  --muted: #6B7280;       /* gris moyen (texte secondaire) */
-  --accent: #EA580C;      /* orange — SEULE couleur d'accent */
-  --accent-dark: #C2410C;
-  --green: #16A34A;       /* statuts OK / terminé */
-  --orange: #F59E0B;      /* ambre : attention / en cours */
-  --red: #DC2626;         /* retard / hors service */
-  --blue: #2563EB;        /* type préventif (info) */
-  --violet: #7C3AED;      /* type amélioratif (info) */
+  --bg: #17191B;          /* fond général */
+  --panel: #1E2124;       /* cartes, champs de saisie */
+  --panel-2: #24282C;     /* fonds secondaires (boutons discrets) */
+  --border: #2E3134;      /* séparateurs et contours */
+  --text: #F5F3EE;        /* texte principal */
+  --muted: #8A8D90;       /* texte secondaire */
+  --accent: #F2B705;      /* jaune — SEULE couleur d'accent */
+  --accent-dark: #D9A404;
+  --on-accent: #17191B;   /* texte posé SUR le jaune */
+  --green: #1D9E75;       /* terminé / OK */
+  --orange: #F2B705;      /* en cours / à surveiller */
+  --red: #E24B4A;         /* en retard / hors service */
+  --planifie: #5F5E5A;    /* gris : activité seulement planifiée */
+  --blue: #4A8CF7;        /* type préventif (info) */
+  --violet: #A78BFA;      /* type amélioratif (info) */
   --radius: 12px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+  --shadow: 0 1px 3px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .25);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-w: 640px;         /* largeur de l'app — élargie sur ordinateur, tout en bas du fichier */
 }
+
+/* Un élément marqué "hidden" doit rester invisible, même si une règle
+   plus bas lui donne un display (cas du sélecteur de photo caché). */
+[hidden] { display: none !important; }
 
 * { box-sizing: border-box; }
 button { font: inherit; color: inherit; }
@@ -51,21 +58,21 @@ a { color: inherit; text-decoration: none; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cost { color: var(--accent); font-weight: 700; }
-.empty { text-align: center; color: #DFE3E8; padding: 48px 16px; }
+.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
 
 /* Textes posés directement sur le fond sombre (hors cartes claires) :
    en clair pour rester bien lisibles */
-.page > .muted, .page > h2, .plan-h { color: #DFE3E8; }
+.page > .muted, .page > h2, .plan-h { color: var(--muted); }
 
 /* ── Barre du haut ─────────────────────────────────────────── */
 .topbar {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 12px;
   padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 14px;
-  background: rgba(69, 77, 87, .92);
+  background: rgba(30, 33, 36, .92);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, .12);
-  color: #fff;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
 }
 .topbar h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -108,38 +115,38 @@ a.card:active { background: var(--panel-2); }
   white-space: nowrap;
 }
 /* Statut d'un véhicule : vert / ambre / rouge */
-.badge.st-en_service   { background: rgba(22, 163, 74, .1);   color: var(--green); }
-.badge.st-maintenance  { background: rgba(245, 158, 11, .12); color: #B45309; }
-.badge.st-hors_service { background: rgba(220, 38, 38, .1);   color: var(--red); }
+.badge.st-en_service   { background: rgba(29, 158, 117, .16); color: var(--green); }
+.badge.st-maintenance  { background: rgba(242, 183, 5, .16);  color: var(--orange); }
+.badge.st-hors_service { background: rgba(226, 75, 74, .16);  color: var(--red); }
 
 /* Type d'intervention (information, teintes douces) */
-.badge.type-preventif   { background: #EFF6FF; color: var(--blue); }
-.badge.type-correctif   { background: #FFF7ED; color: var(--accent); }
-.badge.type-amelioratif { background: #F5F3FF; color: var(--violet); }
+.badge.type-preventif   { background: rgba(74, 140, 247, .14);  color: var(--blue); }
+.badge.type-correctif   { background: rgba(242, 183, 5, .14);   color: var(--accent); }
+.badge.type-amelioratif { background: rgba(167, 139, 250, .14); color: var(--violet); }
 
 /* Statut d'une activité : gris = planifié, ambre = en cours, vert = terminé */
 .chip.st-planifie { background: var(--panel-2);              color: var(--muted); }
-.chip.st-en_cours { background: rgba(245, 158, 11, .12);     color: #B45309; }
-.chip.st-cloture  { background: rgba(22, 163, 74, .1);       color: var(--green); }
+.chip.st-en_cours { background: rgba(242, 183, 5, .16);      color: var(--orange); }
+.chip.st-cloture  { background: rgba(29, 158, 117, .16);     color: var(--green); }
 
 .warn-chip { font-size: .78rem; font-weight: 700; }
 .warn-chip.late { color: var(--red); }
-.warn-chip.soon { color: #B45309; }
+.warn-chip.soon { color: var(--orange); }
 
 /* ── Onglets (barre défilante sur iPhone) ──────────────────── */
 .tabs {
   display: flex; flex-wrap: nowrap; overflow-x: auto;
   position: sticky; top: 0; z-index: 9;
-  background: #17191B; border-bottom: 1px solid rgba(255, 255, 255, .12);
+  background: var(--bg); border-bottom: 1px solid var(--border);
   -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs a {
   flex: 0 0 auto; text-align: center; padding: 13px 16px;
-  font-size: .82rem; font-weight: 600; color: #9AA0A6;
+  font-size: .82rem; font-weight: 600; color: var(--muted);
   border-bottom: 2px solid transparent; white-space: nowrap;
 }
-.tabs a.active { color: #F2B705; border-bottom-color: #F2B705; }
+.tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* ── Échéances ─────────────────────────────────────────────── */
 .due-item { border-left: 4px solid var(--green); width: 100%; text-align: left; cursor: pointer; }
@@ -147,7 +154,7 @@ a.card:active { background: var(--panel-2); }
 .due-item.due-late { border-left-color: var(--red); }
 .due-item .due-when { font-size: .85rem; margin-top: 4px; }
 .due-ok   .due-when { color: var(--green); }
-.due-soon .due-when { color: #B45309; }
+.due-soon .due-when { color: var(--orange); }
 .due-late .due-when { color: var(--red); }
 
 /* ── Fiche technique ───────────────────────────────────────── */
@@ -217,7 +224,7 @@ a.card:active { background: var(--panel-2); }
   cursor: pointer; text-align: center;
   box-shadow: var(--shadow);
 }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn-primary:active { background: var(--accent-dark); }
 .btn-danger { background: none; border: none; color: var(--red); padding: 10px; font-size: .9rem; cursor: pointer; box-shadow: none; }
 .link { background: none; border: none; color: var(--accent); font-size: .9rem; cursor: pointer; padding: 10px; }
@@ -237,16 +244,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .fab {
   position: fixed; right: 18px; bottom: calc(18px + var(--safe-bottom)); z-index: 20;
   width: 58px; height: 58px; border-radius: 50%;
-  background: var(--accent); color: #fff; border: none;
+  background: var(--accent); color: var(--on-accent); border: none;
   font-size: 2rem; line-height: 1; font-weight: 600;
-  box-shadow: 0 6px 16px rgba(234, 88, 12, .35); cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .45); cursor: pointer;
 }
 .fab:active { background: var(--accent-dark); }
 
 /* ── Modales (tiroir qui monte depuis le bas) ──────────────── */
 .overlay {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(31, 41, 55, .4);
+  background: rgba(0, 0, 0, .6);
   display: flex; align-items: flex-end; justify-content: center;
 }
 .modal {
@@ -276,7 +283,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   background: var(--panel); border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   color: var(--text); padding: 12px 14px; border-radius: 10px;
-  font-size: .9rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+  font-size: .9rem; box-shadow: 0 4px 14px rgba(0, 0, 0, .4);
   animation: slide-up .15s ease-out;
 }
 .toast.error { border-left-color: var(--red); }
@@ -287,9 +294,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 14px; padding: 24px; text-align: center;
-  color: #F0F2F4;   /* texte clair sur le fond sombre */
+  color: var(--text);
 }
-.center-screen .muted { color: #C4CAD2; }
+.center-screen .muted { color: var(--muted); }
 .center-screen .card { width: 100%; max-width: 380px; text-align: left; display: grid; gap: 12px; color: var(--text); }
 .center-screen .card .muted { color: var(--muted); }
 .auth .logo { font-size: 3rem; }
@@ -300,7 +307,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   max-width: var(--app-w); margin: 0 auto;
   display: flex; justify-content: space-around; align-items: stretch;
-  background: rgba(242, 243, 245, .97);
+  background: rgba(23, 25, 27, .97);
   backdrop-filter: blur(8px);
   border-top: 1px solid var(--border);
   padding-bottom: var(--safe-bottom);
@@ -317,10 +324,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 /* Onglet central "Créer" : pastille orange en relief */
 .bottom-nav .nav-create .nav-ico {
   width: 44px; height: 44px; margin-top: -16px;
-  background: var(--accent); color: #fff;
+  background: var(--accent); color: var(--on-accent);
   border-radius: 50%; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(234, 88, 12, .35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .45);
 }
 
 /* Marges pour ne pas masquer le contenu / le bouton + derrière la barre */
@@ -354,16 +361,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 /* ── Assistant "Créer une activité" ────────────────────────── */
 .wiz-progress { display: flex; align-items: center; gap: 10px; }
-.wiz-progress .muted { color: #C4CAD2; }
+.wiz-progress .muted { color: var(--muted); }
 .wiz-progress .bar {
   flex: 1; height: 6px; border-radius: 3px;
-  background: rgba(255, 255, 255, .25); overflow: hidden;
+  background: var(--panel-2); overflow: hidden;
 }
 .wiz-progress .bar span {
   display: block; height: 100%; border-radius: 3px;
   background: var(--accent); transition: width .2s ease;
 }
-.wiz-step-title { font-size: 1.15rem; font-weight: 700; margin: 2px 0 6px; color: #fff; }
+.wiz-step-title { font-size: 1.15rem; font-weight: 700; margin: 2px 0 6px; color: var(--text); }
 
 .wiz-options { display: grid; gap: 10px; }
 .option-card {
@@ -386,7 +393,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   box-shadow: var(--shadow);
 }
 .chip-btn:active, .chip-btn.selected {
-  background: #FFF7ED; border-color: var(--accent); color: var(--accent);
+  background: rgba(242, 183, 5, .16); border-color: var(--accent); color: var(--accent);
 }
 .wiz-skip { text-align: center; }
 
@@ -421,10 +428,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 /* Bouton d'action du cycle de vie d'une activité */
 .st-action { width: 100%; margin-top: 12px; }
 .btn-done { background: var(--green); border-color: var(--green); color: #fff; }
-.btn-done:active { background: #15803D; }
+.btn-done:active { background: #17805E; }
 .done-banner {
   margin-top: 12px; padding: 10px 12px; border-radius: 10px;
-  background: rgba(22, 163, 74, .08); color: var(--green);
+  background: rgba(29, 158, 117, .12); color: var(--green);
   font-size: .88rem; font-weight: 600;
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
@@ -456,7 +463,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .v-avatar-badge {
   position: absolute; right: -6px; bottom: -6px;
   width: 24px; height: 24px; border-radius: 50%;
-  background: var(--accent); color: #fff; font-size: .72rem;
+  background: var(--accent); color: var(--on-accent); font-size: .72rem;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
 }
@@ -494,10 +501,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .chart-col .chart-lbl { font-size: .68rem; color: var(--muted); text-transform: uppercase; }
 
 /* ── Page véhicule GMAO : en-tête photo + fiche technique ───── */
-.v-hero { background: #17191B; }
+.v-hero { background: var(--bg); }
 .v-hero-photo {
   position: relative; height: 220px;
-  background: #2A2E33; overflow: hidden;
+  background: var(--panel-2); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
 .v-hero-photo img { width: 100%; height: 100%; object-fit: cover; }
@@ -523,7 +530,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 .v-hero-bar {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 16px; background: #17191B; color: #fff;
+  padding: 12px 16px; background: var(--bg); color: var(--text);
 }
 .v-hero-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .v-hero-name {
@@ -531,13 +538,13 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .v-hero-status {
-  background: #F2B705; color: #17191B;
+  background: var(--accent); color: var(--on-accent);
   padding: 3px 10px; border-radius: 999px;
   font-size: .72rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;
 }
 .v-hero-right {
   margin-left: auto; text-align: right; flex-shrink: 0;
-  color: #C4CAD2; font-size: .82rem;
+  color: var(--muted); font-size: .82rem;
 }
 @media (max-width: 640px) {
   .v-hero-photo { height: 90px; }
@@ -545,31 +552,31 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 
 /* Fiche technique : blocs sombres, titres jaunes, valeurs blanches */
 .se-block {
-  background: #17191B; border: 1px solid #2A2E33;
+  background: var(--panel); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 14px 16px;
 }
 .se-name {
-  margin: 0 0 6px; color: #F2B705;
+  margin: 0 0 6px; color: var(--accent);
   font-size: 1rem; font-weight: 700;
   text-transform: none; letter-spacing: 0;
 }
 .se-data { display: grid; }
 .dt-row {
   display: flex; justify-content: space-between; gap: 14px;
-  padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: 10px 0; border-bottom: 1px solid var(--border);
   cursor: pointer;
   -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 .dt-row:last-child { border-bottom: none; }
 .dt-row:active { background: rgba(255, 255, 255, .04); }
-.dt-lbl { color: #9AA0A6; font-size: .9rem; }
-.dt-val { color: #fff; font-weight: 600; text-align: right; }
+.dt-lbl { color: var(--muted); font-size: .9rem; }
+.dt-val { color: var(--text); font-weight: 600; text-align: right; }
 
 .btn-gmao {
-  background: #F2B705; color: #17191B; border: none;
+  background: var(--accent); color: var(--on-accent); border: none;
   font-weight: 700; box-shadow: none;
 }
-.btn-gmao:active { background: #D9A404; }
+.btn-gmao:active { background: var(--accent-dark); }
 
 /* ── Onglet Création d'activité ────────────────────────────── */
 .create-layout { display: grid; gap: 16px; }
@@ -583,37 +590,105 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   .create-layout { grid-template-columns: 1.35fr 1fr; align-items: start; }
 }
 
+/* ── Onglet Activités ──────────────────────────────────────── */
+.act-head { display: flex; align-items: center; gap: 12px; }
+.act-h {
+  margin: 0; flex: 1; color: var(--text);
+  font-size: 1rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0;
+}
+/* Le "+" en haut à droite qui ouvre le formulaire de création */
+.act-add {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: var(--accent); color: var(--on-accent); border: none;
+  font-size: 1.6rem; line-height: 1; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .4);
+}
+.act-add:active { background: var(--accent-dark); }
+
+.act-list { display: grid; gap: 10px; }
+.act-row { display: grid; gap: 8px; border-left: 4px solid var(--planifie); }
+.act-row.act-en_cours { border-left-color: var(--orange); }
+.act-row.act-late     { border-left-color: var(--red); }
+
+.act-l1 { display: flex; align-items: baseline; gap: 10px; }
+.act-intitule { flex: 1; color: var(--text); font-weight: 700; min-width: 0; }
+/* Étiquette "En retard". Nom volontairement différent de .act-late,
+   qui marque l'ÉTAT de la carte : sinon toute la carte hériterait de
+   ces styles (petit, majuscules, rouge). */
+.act-retard {
+  flex-shrink: 0; color: var(--red);
+  font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+}
+.act-l2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.act-se  { color: var(--muted); font-size: .85rem; }
+.act-fin { color: var(--text); font-size: .85rem; font-weight: 600; }
+
+/* Historique : activités terminées, bordure verte */
+.histo-card { border-left: 4px solid var(--green); }
+
+/* ── Panneau de création d'activité ────────────────────────── */
+.cp-overlay {
+  position: fixed; inset: 0; z-index: 55;
+  background: rgba(0, 0, 0, .6);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.cp-panel {
+  width: 100%; max-height: 92vh; max-height: 92dvh;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  animation: slide-up .18s ease-out;
+}
+.cp-head {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.cp-title {
+  margin: 0; flex: 1; color: var(--text);
+  font-size: 1.05rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0;
+}
+.cp-body {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 16px 16px calc(20px + var(--safe-bottom));
+  display: grid; gap: 12px; align-content: start;
+}
+
 /* ── Onglet Stock de pièces (thème sombre GMAO) ────────────── */
 .stk-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: 10px 0; border-bottom: 1px solid var(--border);
 }
 .stk-row:last-child { border-bottom: none; }
 .stk-txt { flex: 1; display: grid; gap: 2px; cursor: pointer; min-width: 0; }
-.stk-name { color: #fff; font-weight: 600; }
-.stk-meta { color: #9AA1A9; font-size: .82rem; }
+.stk-name { color: var(--text); font-weight: 600; }
+.stk-meta { color: var(--muted); font-size: .82rem; }
 .stk-row .qty-btn {
-  background: #24282D; border: 1px solid #383D44; color: #F2B705;
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--accent);
   font-weight: 700;
 }
-.stk-row .qty-btn:active { background: #2F343A; }
+.stk-row .qty-btn:active { background: var(--border); }
 .stk-qty {
   min-width: 32px; text-align: center;
-  color: #fff; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .stk-qty.zero { color: var(--red); }   /* plus rien en stock */
 .stk-total {
   display: flex; justify-content: space-between;
   margin-top: 12px; padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, .12);
-  color: #9AA1A9; font-size: .85rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted); font-size: .85rem;
 }
-.stk-total span { color: #F2B705; font-weight: 700; }
+.stk-total span { color: var(--accent); font-weight: 700; }
 
 /* ── Onglet Échéances (thème sombre GMAO) ──────────────────── */
 .ech-row {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: 12px 0; border-bottom: 1px solid var(--border);
   cursor: pointer; text-align: left; width: 100%;
   background: none; border-left: none; border-right: none; border-top: none;
 }
@@ -625,15 +700,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .ech-soon .ech-dot { background: var(--orange); }
 .ech-late .ech-dot { background: var(--red); }
 .ech-txt { flex: 1; display: grid; gap: 3px; min-width: 0; }
-.ech-title { color: #fff; font-weight: 600; }
+.ech-title { color: var(--text); font-weight: 600; }
 .ech-when { font-size: .84rem; color: var(--green); }
 .ech-soon .ech-when { color: var(--orange); }
 .ech-late .ech-when { color: var(--red); }
-.ech-note { color: #9AA1A9; font-size: .82rem; }
+.ech-note { color: var(--muted); font-size: .82rem; }
 .ech-auto { color: var(--green); font-size: .78rem; }
 .ech-intro {
-  color: #C4CAD2; font-size: .88rem; margin: 0;
-  background: #17191B; border: 1px solid #2A2E33;
+  color: var(--muted); font-size: .88rem; margin: 0;
+  background: var(--panel); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 12px 14px;
 }
 
@@ -641,7 +716,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .create-see-fiche { margin-top: 4px; }
 .create-see-fiche > summary {
   cursor: pointer; list-style: none;
-  color: #F2B705; font-weight: 600; font-size: .9rem; padding: 10px 0;
+  color: var(--accent); font-weight: 600; font-size: .9rem; padding: 10px 0;
 }
 .create-see-fiche > summary::-webkit-details-marker { display: none; }
 .see-fiche-body { display: grid; gap: 12px; margin-top: 8px; }
@@ -654,6 +729,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 @media (min-width: 700px) {
   .overlay { align-items: center; padding: 24px; }
   .modal { border-radius: 18px; max-width: 480px; }
+
+  /* Le panneau de création se centre au lieu de monter du bas */
+  .cp-overlay { align-items: center; padding: 24px; }
+  .cp-panel {
+    border-radius: 18px; max-width: 560px;
+    max-height: 86vh; max-height: 86dvh;
+    border: 1px solid var(--border);
+  }
 }
 
 /* ── Ordinateur : l'app s'élargit ──────────────────────────────
@@ -686,7 +769,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   .page > .wiz-step-title,
   .page > .wiz-nav,
   .page > .create-layout,
+  .page > .act-head,
+  .page > .act-list,
   .page > .vehicle-summary { grid-column: 1 / -1; }
+
+  /* Le panneau de création s'élargit pour tenir ses 2 colonnes */
+  .cp-panel { max-width: 1000px; }
+
+  /* Liste des activités sur 2 colonnes, comme les autres listes */
+  .act-list { grid-template-columns: 1fr 1fr; }
 
   /* Les tuiles tiennent sur une seule ligne au lieu de deux */
   .hub-grid,

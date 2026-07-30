@@ -17,13 +17,13 @@ import {
   vehicleFields, deadlineFields, stockFields, specFields,
 } from '../constants.js';
 import {
-  $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO,
+  $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO, otLate,
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
 // Les onglets de la page véhicule
 const TABS = [
-  ['create', 'Création d’activité'],
+  ['act',    'Activités'],
   ['fiche',  'Fiche technique'],
   ['histo',  'Historique'],
   ['ech',    'Échéances'],
@@ -44,6 +44,11 @@ function longPress(el, handler) {
 }
 
 export async function renderVehicle(root, id, tab = 'fiche') {
+  // Le bouton "＋ Créer" de la barre du bas pointe sur ".../create" :
+  // on ouvre l'onglet Activités avec le formulaire déjà déplié.
+  let openForm = false;
+  if (tab === 'create') { tab = 'act'; openForm = true; }
+
   // Onglet par défaut = Fiche technique ; tout onglet inconnu (vieux
   // lien /ot, /due… ou favori de l'iPhone) est ramené sur un onglet valide.
   if (!TABS.some(([t]) => t === tab)) tab = 'fiche';
@@ -136,8 +141,8 @@ export async function renderVehicle(root, id, tab = 'fiche') {
 
   // Contenu de l'onglet courant
   if (tab === 'fiche') await ficheTechniqueTab(content, v, rerender);
+  else if (tab === 'act') await actTab(content, v, rerender, openForm);
   else if (tab === 'histo') await histoTab(content, v);
-  else if (tab === 'create') await createTab(content, v, id);
   else if (tab === 'ech') await echeancesTab(content, v, rerender);
   else if (tab === 'stock') await stockTab(content, v, rerender);
 }
@@ -303,9 +308,44 @@ function navBtns(withBack) {
   </div>`;
 }
 
-async function createTab(content, v, id) {
+// Ouvre le formulaire de création dans un panneau par-dessus la page.
+// Sur ordinateur : panneau large, formulaire à gauche et fiche technique
+// à droite. Sur iPhone : feuille plein écran avec l'assistant guidé.
+// `onSaved` est appelé une fois l'activité enregistrée.
+function openCreatePanel(v, onSaved) {
+  const overlay = document.createElement('div');
+  overlay.className = 'cp-overlay';
+  overlay.innerHTML = `
+    <section class="cp-panel">
+      <header class="cp-head">
+        <h2 class="cp-title">Nouvelle activité</h2>
+        <button class="icon-btn" id="cp-close" title="Fermer">✕</button>
+      </header>
+      <div class="cp-body" id="cp-body"><p class="muted">Chargement…</p></div>
+    </section>`;
+  document.body.appendChild(overlay);
+
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  function close() {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  }
+  document.addEventListener('keydown', onKey);
+  $('#cp-close', overlay).onclick = close;
+  // Clic sur le fond (à côté du panneau) = fermer
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  createForm($('#cp-body', overlay), v, () => { close(); onSaved(); })
+    .catch(e => {
+      $('#cp-body', overlay).innerHTML =
+        `<p class="empty">Impossible d’ouvrir le formulaire.<br>${esc(e.message)}</p>`;
+    });
+}
+
+async function createForm(host, v, onSaved) {
   const seList = await db.listSousEnsembles(v.id);
   if (!draft || draftVid !== v.id) { draft = freshDraft(); draftVid = v.id; step = 1; }
+  const content = host;
 
   const desktop = window.matchMedia('(min-width: 1100px)').matches;
 
@@ -348,7 +388,7 @@ async function createTab(content, v, id) {
     });
     draft = null; draftVid = null; step = 1;
     toast('Activité créée ✅');
-    location.hash = `#/vehicle/${id}/histo`;           // apparaît dans l'Historique
+    onSaved();     // ferme le panneau et rafraîchit la liste des activités
   });
 
   // ── Affichage ordinateur : 2 colonnes (formulaire | fiche) ──────
@@ -500,21 +540,18 @@ async function createTab(content, v, id) {
   else drawMobile();
 }
 
-// ════════════════════════════════════════════════════════════════
-// ONGLET « HISTORIQUE » — toutes les activités du véhicule
-// ════════════════════════════════════════════════════════════════
-
-// Carte d'une activité (partagée avec les écrans qui listent des OT)
+// Carte d'une activité terminée, telle qu'affichée dans l'Historique
+// (bordure gauche verte).
 function otCard(ot) {
   const cost = (ot.work_order_parts || [])
     .reduce((s, p) => s + Number(p.price) * Number(p.qty), 0);
   return `
-    <a class="card" href="#/ot/${ot.id}">
+    <a class="card histo-card" href="#/ot/${ot.id}">
       <div class="row">
         <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
         <span class="chip st-${ot.statut}">${esc(label(OT_STATUS, ot.statut))}</span>
         <span class="grow"></span>
-        <span class="muted">${fmtDate(ot.date)}</span>
+        <span class="muted">${fmtDate(echeance(ot) || ot.date)}</span>
       </div>
       ${ot.subsystem ? `<div><strong>${esc(ot.subsystem)}</strong></div>` : ''}
       ${ot.description ? `<div class="muted clamp">${esc(ot.description)}</div>` : ''}
@@ -526,13 +563,92 @@ function otCard(ot) {
     </a>`;
 }
 
+// L'ÉCHÉANCE d'une activité : sa date de fin, ou à défaut sa date de
+// début (vieilles activités saisies avant la refonte GMAO).
+const echeance = ot => ot.date_fin || ot.date || '';
+
+// ════════════════════════════════════════════════════════════════
+// ONGLET « ACTIVITÉS » — uniquement ce qui n'est PAS clôturé
+//
+// Répartition stricte avec l'onglet Historique : une activité est
+// soit ici (planifie / en_cours), soit là-bas (cloture). Jamais les
+// deux, jamais aucune.
+//
+// RÈGLE « EN RETARD » : jamais stockée en base, toujours recalculée
+// à l'affichage — voir otLate() dans ui.js :
+//     en retard = (statut <> 'cloture') ET (date de fin < aujourd'hui)
+// Les deux conditions sont obligatoires.
+// ════════════════════════════════════════════════════════════════
+
+// Une ligne de la liste : intitulé, sous-ensemble, type, date de fin.
+// La bordure gauche donne l'état d'un coup d'œil.
+function actRow(ot, seNames, today) {
+  const late = otLate(ot, today);
+  const etat = late ? 'late' : ot.statut;      // late | en_cours | planifie
+  const se = ot.sous_ensemble_id ? seNames.get(ot.sous_ensemble_id) : null;
+  const fin = echeance(ot);
+  return `
+    <a class="card act-row act-${esc(etat)}" href="#/ot/${ot.id}">
+      <div class="act-l1">
+        <span class="act-intitule">${esc(ot.subsystem || 'Sans intitulé')}</span>
+        ${late ? '<span class="act-retard">En retard</span>' : ''}
+      </div>
+      <div class="act-l2">
+        <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
+        <span class="act-se">${se ? esc(se) : '—'}</span>
+        <span class="grow"></span>
+        <span class="act-fin">${fin ? esc(fmtDate(fin)) : '—'}</span>
+      </div>
+    </a>`;
+}
+
+async function actTab(content, v, rerender, openForm) {
+  const [ots, seList] = await Promise.all([
+    db.listWorkOrders(v.id),
+    db.listSousEnsembles(v.id),
+  ]);
+  const seNames = new Map(seList.map(se => [se.id, se.nom]));
+  const today = todayISO();
+
+  // Tout SAUF les activités clôturées (celles-ci sont dans l'Historique)
+  const items = ots.filter(o => o.statut !== 'cloture');
+
+  // Les activités en retard d'abord, puis par date de fin croissante
+  items.sort((a, b) => {
+    const la = otLate(a, today) ? 0 : 1;
+    const lb = otLate(b, today) ? 0 : 1;
+    if (la !== lb) return la - lb;
+    return (echeance(a) || '9999-12-31').localeCompare(echeance(b) || '9999-12-31');
+  });
+
+  content.innerHTML = `
+    <div class="act-head">
+      <h3 class="act-h">Activités en cours</h3>
+      <button class="act-add" id="act-add" title="Nouvelle activité">+</button>
+    </div>
+    ${items.length
+      ? `<div class="act-list">${items.map(o => actRow(o, seNames, today)).join('')}</div>`
+      : `<p class="empty">Aucune activité en cours.<br>
+         Touche le bouton + pour en créer une.</p>`}`;
+
+  // rerender() redessine l'onglet : la nouvelle activité apparaît aussitôt
+  $('#act-add', content).onclick = () => openCreatePanel(v, rerender);
+  if (openForm) openCreatePanel(v, rerender);
+}
+
+// ════════════════════════════════════════════════════════════════
+// ONGLET « HISTORIQUE » — uniquement les activités clôturées
+// ════════════════════════════════════════════════════════════════
 async function histoTab(content, v) {
-  // Toutes les activités, la plus récente en haut (listWorkOrders trie
-  // déjà par date décroissante).
-  const ots = await db.listWorkOrders(v.id);
+  const ots = (await db.listWorkOrders(v.id)).filter(o => o.statut === 'cloture');
+
+  // La plus récemment terminée en haut
+  ots.sort((a, b) => (echeance(b) || '').localeCompare(echeance(a) || ''));
+
   content.innerHTML = ots.length
     ? ots.map(otCard).join('')
-    : '<p class="empty">Aucune activité pour ce véhicule.<br>Crée-en une depuis l’onglet « Création d’activité ».</p>';
+    : `<p class="empty">Aucune activité terminée pour l’instant.<br>
+       Les activités clôturées viendront se ranger ici.</p>`;
 }
 
 // ════════════════════════════════════════════════════════════════
