@@ -19,6 +19,7 @@
   --orange: #F2B705;      /* en cours / à surveiller */
   --red: #E24B4A;         /* en retard / hors service */
   --planifie: #5F5E5A;    /* gris : activité seulement planifiée */
+  --violet-alerte: #8B5CF6; /* violet : date manquante (ce n'est PAS un retard) */
   --blue: #4A8CF7;        /* type préventif (info) */
   --violet: #A78BFA;      /* type amélioratif (info) */
   --radius: 12px;
@@ -611,16 +612,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .act-row { display: grid; gap: 8px; border-left: 4px solid var(--planifie); }
 .act-row.act-en_cours { border-left-color: var(--orange); }
 .act-row.act-late     { border-left-color: var(--red); }
+.act-row.act-nodate   { border-left-color: var(--violet-alerte); }
 
 .act-l1 { display: flex; align-items: baseline; gap: 10px; }
 .act-intitule { flex: 1; color: var(--text); font-weight: 700; min-width: 0; }
 /* Étiquette "En retard". Nom volontairement différent de .act-late,
    qui marque l'ÉTAT de la carte : sinon toute la carte hériterait de
    ces styles (petit, majuscules, rouge). */
-.act-retard {
-  flex-shrink: 0; color: var(--red);
+.act-retard,
+.act-sansdate {
+  flex-shrink: 0;
   font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
 }
+.act-retard   { color: var(--red); }
+.act-sansdate { color: var(--violet-alerte); }
 .act-l2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .act-se  { color: var(--muted); font-size: .85rem; }
 .act-fin { color: var(--text); font-size: .85rem; font-weight: 600; }

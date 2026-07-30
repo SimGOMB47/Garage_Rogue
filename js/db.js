@@ -187,7 +187,9 @@ export function listWorkOrders(vehicleId) {
       await supabase.from('work_orders')
         .select('*, work_order_parts(qty, price)')
         .eq('vehicle_id', vehicleId)
-        .order('date', { ascending: false })
+        // Tri sur la date de FIN. Les activités sans date de fin
+        // (créées avant la refonte GMAO) sont renvoyées en dernier.
+        .order('date_fin', { ascending: false, nullsFirst: false })
     )
   );
 }
@@ -198,7 +200,7 @@ export function listAllWorkOrders() {
     check(
       await supabase.from('work_orders')
         .select('id, vehicle_id, subsystem, type, date, date_debut, date_fin, statut, description')
-        .order('date')
+        .order('date_fin', { nullsFirst: false })
     )
   );
 }

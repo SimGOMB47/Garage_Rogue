@@ -44,7 +44,9 @@ export async function renderDashboard(root) {
       key,
       label: d.toLocaleDateString('fr-FR', { month: 'narrow' }),
       full:  d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
-      n: workOrders.filter(w => w.date.startsWith(key)).length,
+      // Une activité compte pour le mois de son DÉBUT. Celles sans
+      // date de début (avant la refonte GMAO) ne sont pas comptées.
+      n: workOrders.filter(w => (w.date_debut || '').startsWith(key)).length,
     });
   }
   const maxMonth = Math.max(...months.map(m => m.n), 1);

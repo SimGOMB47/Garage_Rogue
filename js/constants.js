@@ -57,14 +57,27 @@ const VEHICLE_ICONS = {
 export const vehicleIcon = type =>
   VEHICLE_ICONS[String(type ?? '').trim().toLowerCase()] ?? '🚗';
 
+// Formulaire « Modifier l'activité ». L'ancienne colonne `date` n'y
+// figure plus : la période est décrite par date_debut / date_fin, les
+// deux obligatoires. La colonne `date` reste en base comme filet de
+// sécurité (elle est recopiée depuis date_debut à l'enregistrement).
 export const otFields = [
   { name: 'type',        label: 'Type d’intervention', type: 'select', options: OT_TYPES },
-  { name: 'subsystem',   label: 'Sous-ensemble', datalist: SUBSYSTEMS },
-  { name: 'date',        label: 'Date', type: 'date', required: true },
+  { name: 'subsystem',   label: 'Intitulé', datalist: SUBSYSTEMS },
+  { name: 'date_debut',  label: 'Date de début', type: 'date', required: true },
+  { name: 'date_fin',    label: 'Date de fin', type: 'date', required: true },
   { name: 'km',          label: 'Kilométrage', type: 'number', step: '1' },
   { name: 'description', label: 'Description', type: 'textarea' },
   { name: 'statut',      label: 'Statut', type: 'select', options: OT_STATUS },
 ];
+
+// Contrôle commun à tous les endroits qui saisissent une période.
+// Renvoie un message en français, ou null si tout va bien.
+export function verifierPeriode({ date_debut, date_fin }) {
+  if (!date_debut || !date_fin) return 'Les deux dates sont obligatoires.';
+  if (date_fin < date_debut) return 'La date de fin ne peut pas être avant la date de début.';
+  return null;
+}
 
 export const deadlineFields = [
   { name: 'title',    label: 'Intitulé', required: true, placeholder: 'ex : Vidange moteur' },

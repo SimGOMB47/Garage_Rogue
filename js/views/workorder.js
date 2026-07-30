@@ -1,7 +1,7 @@
 // ── Détail d'un ordre de travail : infos, pièces, photos ────────
 
 import * as db from '../db.js';
-import { OT_TYPES, OT_STATUS, label, otFields } from '../constants.js';
+import { OT_TYPES, OT_STATUS, label, otFields, verifierPeriode } from '../constants.js';
 import {
   $, $$, esc, fmtMoney, fmtKm, fmtDate,
   formModal, confirmModal, toast, safe, lightbox,
@@ -21,7 +21,8 @@ export async function renderWorkOrder(root, id, mode) {
   root.innerHTML = `
     <header class="topbar">
       <a class="icon-btn" href="#/vehicle/${ot.vehicle_id}/histo" title="Retour">←</a>
-      <h1 class="grow">${isNew ? 'Nouvelle activité' : `OT du ${fmtDate(ot.date)}`}</h1>
+      <h1 class="grow">${isNew ? 'Nouvelle activité'
+        : ot.date_debut ? `Activité du ${fmtDate(ot.date_debut)}` : 'Activité (date manquante)'}</h1>
       <button class="icon-btn" id="edit-ot" title="Modifier l’OT">✎</button>
     </header>
     <main class="page">
@@ -123,21 +124,35 @@ export async function renderWorkOrder(root, id, mode) {
 
   // Modifier / supprimer l'OT
   $('#edit-ot').onclick = safe(async () => {
+    // Pré-remplissage : une activité d'avant la refonte GMAO n'a ni
+    // date de début ni date de fin, seulement l'ancienne colonne
+    // `date`. On propose cette valeur dans les DEUX champs ; il n'y a
+    // plus qu'à ajuster. Rien n'est enregistré tant que Simon n'a pas
+    // validé la fenêtre.
+    const values = { ...ot };
+    if (!values.date_debut && !values.date_fin && ot.date) {
+      values.date_debut = ot.date;
+      values.date_fin   = ot.date;
+    }
+
     const res = await formModal({
-      title: 'Modifier l’ordre de travail',
+      title: 'Modifier l’activité',
       fields: otFields,
-      values: ot,
-      dangerLabel: 'Supprimer cet OT',
+      values,
+      dangerLabel: 'Supprimer cette activité',
+      validate: verifierPeriode,
     });
     if (res === 'DANGER') {
-      if (await confirmModal('Supprimer cet ordre de travail, ses pièces et ses photos ?')) {
+      if (await confirmModal('Supprimer cette activité, ses pièces et ses photos ?')) {
         await db.deleteWorkOrder(id);
-        toast('OT supprimé');
+        toast('Activité supprimée');
         location.hash = `#/vehicle/${ot.vehicle_id}/histo`;
       }
     } else if (res) {
-      await db.saveWorkOrder(res, id);
-      toast('OT enregistré');
+      // `date` est conservée en base comme filet de sécurité : on la
+      // garde alignée sur la date de début.
+      await db.saveWorkOrder({ ...res, date: res.date_debut }, id);
+      toast('Activité enregistrée');
       rerender();
     }
   });

@@ -94,9 +94,15 @@ export function dueText(d, vehicleKm) {
 // avant la refonte (sans date_fin), on retombe sur leur ancienne date.
 export function otLate(ot, today = todayISO()) {
   if (!ot || ot.statut === 'cloture') return false;
-  const deadline = ot.date_fin || ot.date;
-  return !!deadline && deadline < today;
+  // Sans date de fin, la règle ne peut pas s'appliquer : une date
+  // ABSENTE n'est pas un retard. Ces activités sont signalées à part
+  // (bordure violette « date manquante » dans l'onglet Activités).
+  return !!ot.date_fin && ot.date_fin < today;
 }
+
+// Une activité dont la date de fin n'a jamais été renseignée : c'est
+// le cas des activités créées avant la refonte GMAO.
+export const otSansDate = ot => !ot?.date_fin;
 
 // ── Modales ─────────────────────────────────────────────────────
 let modalOpenCount = 0;
@@ -151,7 +157,11 @@ function fieldHTML(f, values) {
 //  - un objet { champ: valeur } si l'utilisateur valide
 //  - la chaîne 'DANGER' s'il touche le bouton rouge (dangerLabel)
 //  - null s'il annule
-export function formModal({ title, fields, values = {}, submitLabel = 'Enregistrer', dangerLabel = null }) {
+// `validate` (facultatif) reçoit les valeurs saisies et renvoie un
+// message d'erreur en français si quelque chose ne va pas. Dans ce cas
+// la fenêtre RESTE ouverte : rien n'est enregistré et la saisie n'est
+// pas perdue.
+export function formModal({ title, fields, values = {}, submitLabel = 'Enregistrer', dangerLabel = null, validate = null }) {
   return new Promise(resolve => {
     const ov = openOverlay(`
       <form class="modal">
@@ -184,6 +194,10 @@ export function formModal({ title, fields, values = {}, submitLabel = 'Enregistr
         } else {
           out[f.name] = String(raw ?? '').trim() || null;
         }
+      }
+      if (validate) {
+        const erreur = validate(out);
+        if (erreur) { toast(erreur, 'error'); return; }   // on ne ferme pas
       }
       close(out);
     });

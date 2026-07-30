@@ -14,10 +14,10 @@
 import * as db from '../db.js';
 import {
   VEHICLE_STATUS, OT_TYPES, OT_STATUS, label, vehicleIcon,
-  vehicleFields, deadlineFields, stockFields, specFields,
+  vehicleFields, deadlineFields, stockFields, specFields, verifierPeriode,
 } from '../constants.js';
 import {
-  $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO, otLate,
+  $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO, otLate, otSansDate,
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
@@ -365,9 +365,11 @@ async function createForm(host, v, onSaved) {
     });
   };
 
+  // Même contrôle que dans le formulaire de modification : un seul
+  // endroit décrit ce qu'est une période valable.
   const validateDates = () => {
-    if (!draft.date_debut || !draft.date_fin) { toast('Les deux dates sont obligatoires', 'error'); return false; }
-    if (draft.date_fin < draft.date_debut) { toast('La date de fin ne peut pas être avant la date de début', 'error'); return false; }
+    const erreur = verifierPeriode(draft);
+    if (erreur) { toast(erreur, 'error'); return false; }
     return true;
   };
 
@@ -381,7 +383,7 @@ async function createForm(host, v, onSaved) {
       organe_id:        draft.organe_id || null,
       subsystem:        draft.intitule.trim(),        // intitulé (affiché en gras)
       description:      draft.description.trim() || null,
-      date:             draft.date_debut,             // pour l'ordre dans le Planning
+      date:             draft.date_debut,             // ancienne colonne, gardée comme filet de sécurité
       date_debut:       draft.date_debut,
       date_fin:         draft.date_fin,
       statut:           'planifie',                   // forcé à la création
@@ -551,7 +553,7 @@ function otCard(ot) {
         <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
         <span class="chip st-${ot.statut}">${esc(label(OT_STATUS, ot.statut))}</span>
         <span class="grow"></span>
-        <span class="muted">${fmtDate(echeance(ot) || ot.date)}</span>
+        <span class="muted">${echeance(ot) ? esc(fmtDate(echeance(ot))) : 'date manquante'}</span>
       </div>
       ${ot.subsystem ? `<div><strong>${esc(ot.subsystem)}</strong></div>` : ''}
       ${ot.description ? `<div class="muted clamp">${esc(ot.description)}</div>` : ''}
@@ -563,9 +565,10 @@ function otCard(ot) {
     </a>`;
 }
 
-// L'ÉCHÉANCE d'une activité : sa date de fin, ou à défaut sa date de
-// début (vieilles activités saisies avant la refonte GMAO).
-const echeance = ot => ot.date_fin || ot.date || '';
+// L'ÉCHÉANCE d'une activité = sa date de fin, et rien d'autre.
+// Plus aucun repli sur l'ancienne colonne `date` : si date_fin est
+// vide, l'activité est signalée comme « date manquante ».
+const echeance = ot => ot.date_fin || '';
 
 // ════════════════════════════════════════════════════════════════
 // ONGLET « ACTIVITÉS » — uniquement ce qui n'est PAS clôturé
@@ -583,21 +586,25 @@ const echeance = ot => ot.date_fin || ot.date || '';
 // Une ligne de la liste : intitulé, sous-ensemble, type, date de fin.
 // La bordure gauche donne l'état d'un coup d'œil.
 function actRow(ot, seNames, today) {
+  const sansDate = otSansDate(ot);
   const late = otLate(ot, today);
-  const etat = late ? 'late' : ot.statut;      // late | en_cours | planifie
+  // Ordre de priorité : pas de date de fin > en retard > statut.
+  // Une activité sans date de fin n'est JAMAIS "en retard" : la règle
+  // ne peut pas s'appliquer, il n'y a rien à comparer.
+  const etat = sansDate ? 'nodate' : late ? 'late' : ot.statut;
   const se = ot.sous_ensemble_id ? seNames.get(ot.sous_ensemble_id) : null;
-  const fin = echeance(ot);
   return `
     <a class="card act-row act-${esc(etat)}" href="#/ot/${ot.id}">
       <div class="act-l1">
         <span class="act-intitule">${esc(ot.subsystem || 'Sans intitulé')}</span>
-        ${late ? '<span class="act-retard">En retard</span>' : ''}
+        ${sansDate ? '<span class="act-sansdate">Date manquante</span>'
+          : late ? '<span class="act-retard">En retard</span>' : ''}
       </div>
       <div class="act-l2">
         <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
         <span class="act-se">${se ? esc(se) : '—'}</span>
         <span class="grow"></span>
-        <span class="act-fin">${fin ? esc(fmtDate(fin)) : '—'}</span>
+        <span class="act-fin">${sansDate ? '—' : esc(fmtDate(echeance(ot)))}</span>
       </div>
     </a>`;
 }
@@ -613,12 +620,14 @@ async function actTab(content, v, rerender, openForm) {
   // Tout SAUF les activités clôturées (celles-ci sont dans l'Historique)
   const items = ots.filter(o => o.statut !== 'cloture');
 
-  // Les activités en retard d'abord, puis par date de fin croissante
+  // Ordre : les activités en retard d'abord, puis les autres par date
+  // de fin croissante, et enfin celles sans date de fin (rien pour les
+  // situer dans le temps, elles ferment donc la marche).
+  const rang = ot => otSansDate(ot) ? 2 : otLate(ot, today) ? 0 : 1;
   items.sort((a, b) => {
-    const la = otLate(a, today) ? 0 : 1;
-    const lb = otLate(b, today) ? 0 : 1;
-    if (la !== lb) return la - lb;
-    return (echeance(a) || '9999-12-31').localeCompare(echeance(b) || '9999-12-31');
+    const ra = rang(a), rb = rang(b);
+    if (ra !== rb) return ra - rb;
+    return echeance(a).localeCompare(echeance(b));
   });
 
   content.innerHTML = `

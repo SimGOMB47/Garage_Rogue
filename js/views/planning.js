@@ -38,15 +38,19 @@ export async function renderPlanning(root) {
   // ── Activités à faire, groupées par véhicule ───────────────────
   // Tri par date croissante : la plus en retard tout en haut,
   // puis la plus proche d'aujourd'hui, puis les plus lointaines.
+  // Tri sur la date de FIN. Les activités sans date de fin (créées
+  // avant la refonte GMAO) n'ont rien qui permette de les situer :
+  // elles passent en dernier.
+  const cle = w => w.date_fin || '9999-12-31';
   const open = workOrders
     .filter(w => w.statut !== 'cloture')
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => cle(a).localeCompare(cle(b)));
 
   const groups = vehicles
     .map(v => ({ v, ots: open.filter(w => w.vehicle_id === v.id) }))
     .filter(g => g.ots.length)
-    // Véhicule le plus urgent en premier (date de sa 1re activité)
-    .sort((a, b) => a.ots[0].date.localeCompare(b.ots[0].date));
+    // Véhicule le plus urgent en premier (échéance de sa 1re activité)
+    .sort((a, b) => cle(a.ots[0]).localeCompare(cle(b.ots[0])));
 
   // Échéances en alerte (dépassées ou proches), les plus urgentes d'abord
   const orderDue = { late: 0, soon: 1 };
@@ -65,7 +69,9 @@ export async function renderPlanning(root) {
         <span class="badge type-${w.type}">${esc(label(OT_TYPES, w.type))}</span>
         <span class="chip st-${w.statut}">${esc(label(OT_STATUS, w.statut))}</span>
         <span class="grow"></span>
-        <span class="${late ? 'warn-chip late' : 'muted'}">${fmtDate(w.date)} · ${relDate(w.date)}</span>
+        <span class="${late ? 'warn-chip late' : 'muted'}">${w.date_fin
+          ? `${fmtDate(w.date_fin)} · ${relDate(w.date_fin)}`
+          : 'date manquante'}</span>
       </div>
       ${w.subsystem ? `<div><strong>${esc(w.subsystem)}</strong></div>` : ''}
       ${w.description ? `<div class="muted clamp">${esc(w.description)}</div>` : ''}
@@ -83,7 +89,7 @@ export async function renderPlanning(root) {
             <span class="muted">
               ${ots.length} activité${ots.length > 1 ? 's' : ''}
               ${lateCount ? ` · <span class="warn-chip late">${lateCount} en retard</span>` : ''}
-              · prochaine : ${relDate(ots[0].date)}
+              ${ots[0].date_fin ? `· prochaine : ${relDate(ots[0].date_fin)}` : ''}
             </span>
           </span>
           <span class="plan-arrow">▾</span>
