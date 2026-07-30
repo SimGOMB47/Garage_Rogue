@@ -57,7 +57,7 @@ export async function renderDashboard(root) {
     </div>`;
 
   const costBar = v => `
-    <a class="bar-row" href="#/vehicle/${v.id}/ot">
+    <a class="bar-row" href="#/vehicle/${v.id}/histo">
       <div class="row">
         <span class="grow">${esc(v.name)}</span>
         <span class="cost">${fmtMoney(v.total_cost)}</span>

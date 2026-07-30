@@ -1,30 +1,32 @@
-// ── Fiche véhicule : en-tête photo + 4 onglets (GMAO) ───────────
+// ── Fiche véhicule : en-tête photo + 5 onglets (GMAO) ───────────
 //
-// Onglets : Création d'activité | Fiche technique | Historique | Stock
 //  - "Création d'activité" : formulaire 2 colonnes sur ordinateur,
 //    assistant guidé étape par étape sur iPhone (< 1100px).
 //  - "Fiche technique" : sous-ensembles + données techniques.
 //  - "Historique" : toutes les activités du véhicule (récentes d'abord).
-//  - "Stock de pièces" : à venir (prochain prompt).
+//  - "Échéances" : entretiens programmés ; l'activité est créée
+//    automatiquement un mois avant (autoGenerate, app.js).
+//  - "Stock de pièces" : pièces gardées d'avance pour ce véhicule.
 //
-// Note : les anciens onglets (Activités, Échéances, Stock, Fiche specs)
-// sont conservés plus bas dans le fichier — hors interface pour l'instant.
+// Chaque onglet ajoute son propre bouton "+" dans le contenu : la page
+// véhicule n'a pas de bouton flottant.
 
 import * as db from '../db.js';
 import {
   VEHICLE_STATUS, OT_TYPES, OT_STATUS, label, vehicleIcon,
-  vehicleFields, otFields, deadlineFields, stockFields, specFields,
+  vehicleFields, deadlineFields, stockFields, specFields,
 } from '../constants.js';
 import {
   $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO,
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
 } from '../ui.js';
 
-// Les 4 onglets de la page véhicule
+// Les onglets de la page véhicule
 const TABS = [
   ['create', 'Création d’activité'],
   ['fiche',  'Fiche technique'],
   ['histo',  'Historique'],
+  ['ech',    'Échéances'],
   ['stock',  'Stock de pièces'],
 ];
 
@@ -42,8 +44,8 @@ function longPress(el, handler) {
 }
 
 export async function renderVehicle(root, id, tab = 'fiche') {
-  // Onglet par défaut = Fiche technique ; tout onglet inconnu (ancien
-  // lien /ot, /due…) est ramené sur un onglet valide.
+  // Onglet par défaut = Fiche technique ; tout onglet inconnu (vieux
+  // lien /ot, /due… ou favori de l'iPhone) est ramené sur un onglet valide.
   if (!TABS.some(([t]) => t === tab)) tab = 'fiche';
 
   const v = await db.getVehicle(id);
@@ -136,7 +138,8 @@ export async function renderVehicle(root, id, tab = 'fiche') {
   if (tab === 'fiche') await ficheTechniqueTab(content, v, rerender);
   else if (tab === 'histo') await histoTab(content, v);
   else if (tab === 'create') await createTab(content, v, id);
-  else content.innerHTML = '<p class="empty">🚧 À venir<br>Cet onglet sera construit prochainement.</p>';
+  else if (tab === 'ech') await echeancesTab(content, v, rerender);
+  else if (tab === 'stock') await stockTab(content, v, rerender);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -533,55 +536,42 @@ async function histoTab(content, v) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// ANCIENS ONGLETS — conservés hors interface, à rebrancher plus tard
-// (Activités, Échéances, Stock, Fiche technique "specs").
+// ONGLET « ÉCHÉANCES » — entretiens programmés (date ou kilométrage)
+// L'activité correspondante est créée automatiquement 1 mois avant
+// l'échéance (voir autoGenerate dans app.js).
 // ════════════════════════════════════════════════════════════════
-
-// ── Onglet : activités en cours ou prévues ──────────────────────
-async function otTab(content, addBtn, v) {
-  const ots = (await db.listWorkOrders(v.id)).filter(o => o.statut !== 'cloture');
-
-  content.innerHTML = ots.length
-    ? ots.map(otCard).join('')
-    : '<p class="empty">Aucune activité en cours ou prévue.<br>Touche + pour en créer une.</p>';
-
-  addBtn.onclick = safe(async () => {
-    const values = await formModal({
-      title: 'Nouvelle activité',
-      fields: otFields,
-      values: { type: 'correctif', statut: 'planifie', date: todayISO(), km: v.km },
-    });
-    if (!values) return;
-    const ot = await db.saveWorkOrder({ ...values, vehicle_id: v.id });
-    toast('Activité créée — ajoute pièces et photos');
-    location.hash = `#/ot/${ot.id}`;
-  });
-}
-
-// ── Onglet : échéances préventives ──────────────────────────────
-async function dueTab(content, addBtn, v, rerender) {
+async function echeancesTab(content, v, rerender) {
   const items = await db.listDeadlines(v.id);
 
+  // Les plus urgentes en haut : en retard, puis bientôt, puis le reste
   const order = { late: 0, soon: 1, ok: 2 };
   items.sort((a, b) => order[dueStatus(a, v.km)] - order[dueStatus(b, v.km)]);
 
   content.innerHTML = `
-    <p class="muted" style="margin:0">🤖 Programme ici les entretiens à date fixe :
-    l’activité se créera <strong>toute seule 1 mois avant</strong> l’échéance
-    et apparaîtra dans le Planning.</p>
-    ${items.length
-      ? items.map(d => `
-        <button class="card due-item due-${dueStatus(d, v.km)}" data-id="${d.id}">
-          <strong>${esc(d.title)}</strong>
-          <div class="due-when">${esc(dueText(d, v.km))}</div>
-          ${d.notes ? `<div class="muted clamp">${esc(d.notes)}</div>` : ''}
-          ${d.work_order_id
-            ? '<div class="warn-chip" style="color:var(--green)">✓ Activité créée automatiquement — visible dans le Planning</div>'
-            : ''}
-        </button>`).join('')
-      : '<p class="empty">Aucune échéance programmée.<br>Touche + pour en ajouter une (vidange, contrôle technique…).</p>'}`;
+    <p class="ech-intro">🤖 Programme ici les entretiens qui reviennent :
+    l’activité se crée <strong>toute seule un mois avant</strong> l’échéance
+    et apparaît dans le Planning.</p>
+    ${items.length ? `
+      <section class="se-block">
+        <h3 class="se-name">📅 Échéances programmées</h3>
+        <div class="se-data">
+          ${items.map(d => `
+            <button class="ech-row ech-${dueStatus(d, v.km)}" data-id="${d.id}">
+              <span class="ech-dot"></span>
+              <span class="ech-txt">
+                <span class="ech-title">${esc(d.title)}</span>
+                <span class="ech-when">${esc(dueText(d, v.km))}</span>
+                ${d.notes ? `<span class="ech-note clamp">${esc(d.notes)}</span>` : ''}
+                ${d.work_order_id ? '<span class="ech-auto">✓ Activité déjà créée — visible dans le Planning</span>' : ''}
+              </span>
+            </button>`).join('')}
+        </div>
+      </section>`
+      : `<p class="empty">Aucune échéance programmée.<br>
+         Touche « + programmer une échéance » (vidange, contrôle technique…).</p>`}
+    <button class="btn btn-gmao" id="add-ech">+ programmer une échéance</button>`;
 
-  $$('.due-item', content).forEach(el => {
+  $$('.ech-row', content).forEach(el => {
     el.onclick = safe(async () => {
       const d = items.find(x => x.id === el.dataset.id);
       const res = await formModal({
@@ -597,6 +587,7 @@ async function dueTab(content, addBtn, v, rerender) {
           rerender();
         }
       } else if (res) {
+        // Nouvelle date → l'activité automatique devra être recréée
         if (res.due_date !== d.due_date) res.work_order_id = null;
         await db.saveDeadline(res, d.id);
         toast('Échéance enregistrée');
@@ -605,7 +596,7 @@ async function dueTab(content, addBtn, v, rerender) {
     });
   });
 
-  addBtn.onclick = safe(async () => {
+  $('#add-ech').onclick = safe(async () => {
     const values = await formModal({ title: 'Programmer une échéance', fields: deadlineFields });
     if (!values) return;
     await db.saveDeadline({ ...values, vehicle_id: v.id });
@@ -614,35 +605,52 @@ async function dueTab(content, addBtn, v, rerender) {
   });
 }
 
-// ── Onglet : stock de pièces ────────────────────────────────────
-async function stockTab(content, addBtn, v, rerender) {
+// ════════════════════════════════════════════════════════════════
+// ONGLET « STOCK DE PIÈCES » — pièces gardées d'avance pour ce véhicule
+// ════════════════════════════════════════════════════════════════
+async function stockTab(content, v, rerender) {
   const items = await db.listStock(v.id);
+  const total = items.reduce((s, p) => s + Number(p.price || 0) * Number(p.qty || 0), 0);
 
-  content.innerHTML = items.length
-    ? items.map(p => `
-        <div class="card stock-row" data-id="${p.id}">
-          <div class="grow" data-edit style="cursor:pointer">
-            <strong>${esc(p.name)}</strong>
-            <div class="muted">${[p.ref, p.price != null ? fmtMoney(p.price) : null]
-              .filter(Boolean).map(esc).join(' · ') || '&nbsp;'}</div>
-          </div>
-          <button class="qty-btn" data-delta="-1">−</button>
-          <span class="qty">${Number(p.qty)}</span>
-          <button class="qty-btn" data-delta="1">+</button>
-        </div>`).join('')
-    : '<p class="empty">Aucune pièce en stock pour ce véhicule.<br>Touche + pour en ajouter.</p>';
+  content.innerHTML = `
+    ${items.length ? `
+      <section class="se-block">
+        <h3 class="se-name">🧰 En stock</h3>
+        <div class="se-data">
+          ${items.map(p => {
+            const meta = [p.ref, p.price != null ? fmtMoney(p.price) : null]
+              .filter(Boolean).map(esc).join(' · ');
+            return `
+            <div class="stk-row" data-id="${p.id}">
+              <span class="stk-txt" data-edit>
+                <span class="stk-name">${esc(p.name)}</span>
+                ${meta ? `<span class="stk-meta">${meta}</span>` : ''}
+              </span>
+              <button class="qty-btn" data-delta="-1" title="Retirer un">−</button>
+              <span class="stk-qty${Number(p.qty) === 0 ? ' zero' : ''}">${Number(p.qty)}</span>
+              <button class="qty-btn" data-delta="1" title="Ajouter un">+</button>
+            </div>`;
+          }).join('')}
+        </div>
+        ${total ? `<div class="stk-total">Valeur du stock<span>${fmtMoney(total)}</span></div>` : ''}
+      </section>`
+      : `<p class="empty">Aucune pièce en stock pour ce véhicule.<br>
+         Touche « + ajouter une pièce » pour garder d’avance un filtre, des plaquettes…</p>`}
+    <button class="btn btn-gmao" id="add-stock">+ ajouter une pièce</button>`;
 
-  $$('.stock-row', content).forEach(row => {
+  $$('.stk-row', content).forEach(row => {
     const p = items.find(x => x.id === row.dataset.id);
 
+    // Les deux boutons − / + ajustent la quantité sans ouvrir de fenêtre
     $$('.qty-btn', row).forEach(btn => {
       btn.onclick = safe(async () => {
-        const newQty = Math.max(0, Number(p.qty) + Number(btn.dataset.delta));
-        await db.saveStockPart({ qty: newQty }, p.id);
+        const qty = Math.max(0, Number(p.qty || 0) + Number(btn.dataset.delta));
+        await db.saveStockPart({ qty }, p.id);
         rerender();
       });
     });
 
+    // Toucher le nom de la pièce ouvre la fiche pour la modifier
     $('[data-edit]', row).onclick = safe(async () => {
       const res = await formModal({
         title: 'Modifier la pièce',
@@ -664,7 +672,7 @@ async function stockTab(content, addBtn, v, rerender) {
     });
   });
 
-  addBtn.onclick = safe(async () => {
+  $('#add-stock').onclick = safe(async () => {
     const values = await formModal({
       title: 'Nouvelle pièce en stock',
       fields: stockFields,
@@ -677,7 +685,13 @@ async function stockTab(content, addBtn, v, rerender) {
   });
 }
 
-// ── Onglet : ancienne fiche technique (vehicle_specs) ───────────
+// ════════════════════════════════════════════════════════════════
+// ANCIENNE FICHE TECHNIQUE (table vehicle_specs) — HORS INTERFACE
+// Gardée volontairement : les fiches créées avant la refonte GMAO
+// (huile, filtres, pneus, photos) sont toujours dans cette table.
+// La nouvelle fiche technique utilise `donnees_techniques`.
+// À trancher : reprendre ces données ou supprimer ce bloc.
+// ════════════════════════════════════════════════════════════════
 async function specTab(content, addBtn, v, rerender) {
   const specs = await db.listSpecs(v.id);
   const urls = await db.photoUrls(

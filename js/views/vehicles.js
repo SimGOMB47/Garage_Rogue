@@ -20,7 +20,7 @@ function vehicleCard(v, deadlines, urls) {
   const meta = [brandModel, v.type, v.year, v.plate].filter(Boolean).map(esc).join(' · ');
 
   return `
-    <a class="card vehicle-card" href="#/vehicle/${v.id}/ot">
+    <a class="card vehicle-card" href="#/vehicle/${v.id}/fiche">
       <div class="row">
         ${vehicleAvatar(v, urls)}
         <strong class="grow">${esc(v.name)}</strong>
@@ -67,6 +67,6 @@ export async function renderVehicles(root) {
     if (!values) return;
     const v = await db.saveVehicle(values);
     toast('Véhicule ajouté');
-    location.hash = `#/vehicle/${v.id}/ot`;
+    location.hash = `#/vehicle/${v.id}/fiche`;
   });
 }

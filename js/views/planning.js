@@ -94,7 +94,7 @@ export async function renderPlanning(root) {
 
   // Carte d'une échéance en alerte → mène à l'onglet Échéances du véhicule
   const dueCard = d => `
-    <a class="card due-item due-${d.st}" href="#/vehicle/${d.vehicle_id}/due">
+    <a class="card due-item due-${d.st}" href="#/vehicle/${d.vehicle_id}/ech">
       <div class="row">
         <strong>${esc(d.title)}</strong>
         <span class="grow"></span>
