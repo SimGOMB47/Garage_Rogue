@@ -5,7 +5,7 @@
 
 export function bottomNav(active) {
   const items = [
-    ['home',      '#/',          '🏠', 'Accueil'],
+    ['home',      '#/',          '🔧', 'Activités'],
     ['vehicles',  '#/vehicles',  '🚗', 'Véhicules'],
     ['create',    '#/new',       '＋', 'Créer'],
     ['planning',  '#/planning',  '📅', 'Planning'],

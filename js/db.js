@@ -205,6 +205,28 @@ export function listAllWorkOrders() {
   );
 }
 
+// Toutes les activités avec ce qu'il faut pour la page "Activités"
+// globale : le sous-ensemble et les pièces (pour le coût du mois).
+// Volontairement SÉPARÉE de listAllWorkOrders, qui sert à l'accueil,
+// au planning et au tableau de bord : on ne risque pas de les casser.
+export function listActivitiesOverview() {
+  return cached('ots:overview', async () =>
+    check(
+      await supabase.from('work_orders')
+        .select('id, vehicle_id, subsystem, type, date_debut, date_fin, statut, sous_ensemble_id, work_order_parts(qty, price)')
+        .order('date_fin', { nullsFirst: false })
+    )
+  );
+}
+
+// Les sous-ensembles de TOUS les véhicules (juste id + nom), pour
+// retrouver le nom à afficher à côté d'une activité.
+export function listAllSousEnsembles() {
+  return cached('se:all', async () =>
+    check(await supabase.from('sous_ensembles').select('id, nom'))
+  );
+}
+
 export function getWorkOrder(id) {
   return cached(`ot:${id}`, async () =>
     check(

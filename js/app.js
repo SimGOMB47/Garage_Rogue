@@ -5,7 +5,7 @@ import { supabase, isMember, onAnyChange, generateDueActivities } from './db.js'
 import { renderLogin, renderNotMember } from './auth.js';
 import { esc, isModalOpen, toast } from './ui.js';
 import { setupAutoUpdate } from './update.js';
-import { renderHome } from './views/home.js';
+import { renderActivities } from './views/activities.js';
 import { renderVehicles } from './views/vehicles.js';
 import { renderVehicle } from './views/vehicle.js';
 import { renderWorkOrder } from './views/workorder.js';
@@ -43,7 +43,7 @@ async function route() {
     else if (parts[0] === 'new') await renderActivityWizard(app);
     else if (parts[0] === 'planning') await renderPlanning(app);
     else if (parts[0] === 'dashboard') await renderDashboard(app);
-    else await renderHome(app);
+    else await renderActivities(app);   // écran d'accueil
   } catch (e) {
     console.error(e);
     app.innerHTML = `

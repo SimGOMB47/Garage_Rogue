@@ -591,6 +591,154 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   .create-layout { grid-template-columns: 1.35fr 1fr; align-items: start; }
 }
 
+/* ════════════════════════════════════════════════════════════
+   PAGE « ACTIVITÉS » (écran d'accueil, tous véhicules)
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 1) Pastilles de filtre ────────────────────────────────── */
+.filtre-row {
+  display: flex; gap: 8px;
+  overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;              /* évite que l'ombre soit coupée */
+}
+.filtre-row::-webkit-scrollbar { display: none; }
+.filtre-chip {
+  flex: 0 0 auto;                   /* ne rétrécit pas : on fait défiler */
+  background: transparent; color: var(--muted);
+  border: 1px solid #3A3E42; border-radius: 999px;
+  padding: 8px 15px; font-size: .85rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.filtre-chip:active { background: var(--panel-2); }
+.filtre-chip.actif {
+  background: var(--accent); color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* ── 2) Frise chronologique ────────────────────────────────── */
+.frise { padding: 14px 0 10px; overflow: hidden; }
+.frise-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.frise-inner { min-width: 720px; padding: 0 14px; }   /* en dessous : défilement */
+
+.frise-entete { display: flex; align-items: flex-end; margin-bottom: 8px; }
+/* La colonne des noms fait 100px : l'en-tête, le calque et chaque
+   ligne de véhicule utilisent la même valeur, tout reste aligné. */
+.frise-nom, .frise-nom-col { width: 100px; flex: 0 0 100px; }
+.frise-nom {
+  color: var(--text); font-size: .82rem; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-right: 10px;
+  /* Aligné sur la PREMIÈRE barre, pas centré : sinon le nom descend
+     au milieu dès qu'un véhicule a deux couloirs. */
+  display: flex; align-items: center; height: 26px;
+}
+.frise-mois { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); }
+.frise-mois span {
+  color: var(--muted); font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; text-align: center;
+  border-left: 1px solid var(--border); padding-bottom: 4px;
+}
+.frise-mois span:first-child { border-left: none; }
+
+.frise-corps { position: relative; }
+/* Calque transparent posé sur la seule piste (à droite des noms) :
+   c'est lui qui donne au trait "aujourd'hui" son repère en %. */
+.frise-calque {
+  position: absolute; left: 100px; right: 0; top: 0; bottom: 0;
+  pointer-events: none; z-index: 2;
+}
+.frise-today {
+  position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--accent);
+}
+.frise-today::before {
+  content: ''; position: absolute; top: -3px; left: -3px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+}
+
+.frise-vehicule { display: flex; padding: 6px 0; border-top: 1px solid var(--border); }
+.frise-vehicule:first-child { border-top: none; }
+.frise-rangs { flex: 1; display: grid; gap: 4px; }
+.frise-rang { position: relative; height: 26px; }
+
+.frise-barre {
+  position: absolute; top: 0; height: 26px;
+  min-width: 8px;                   /* une activité d'un jour reste visible */
+  border-radius: 6px;
+  display: flex; align-items: center;
+  padding: 0 7px; overflow: hidden;
+  font-size: .72rem; font-weight: 700;
+}
+.frise-barre .fb-txt {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fb-late     { background: var(--red);          color: #fff; }
+.fb-en_cours { background: var(--accent);       color: var(--on-accent); }
+.fb-cloture  { background: var(--green);        color: #fff; }
+.fb-planifie { background: #3A3E42;             color: var(--text); }
+
+.frise-legende {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  padding: 12px 14px 0; margin-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted); font-size: .74rem;
+}
+.frise-legende span { display: flex; align-items: center; gap: 6px; }
+.lg { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.lg-late { background: var(--red); }
+.lg-en_cours { background: var(--accent); }
+.lg-cloture { background: var(--green); }
+.lg-planifie { background: #3A3E42; }
+
+/* ── 3) Les 6 activités les plus proches ───────────────────── */
+.proch { padding: 14px 16px; }
+.proch-h {
+  margin: 0 0 10px; color: var(--text);
+  font-size: 1rem; font-weight: 700;
+  text-transform: none; letter-spacing: 0;
+}
+.proch-list { display: grid; }
+.proch-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0 11px 12px;
+  border-bottom: 1px solid var(--border);
+  border-left: 4px solid var(--planifie);
+}
+.proch-row:last-child { border-bottom: none; }
+.proch-row.pr-en_cours { border-left-color: var(--orange); }
+.proch-row.pr-late     { border-left-color: var(--red); }
+.proch-row.pr-cloture  { border-left-color: var(--green); }
+.proch-row.pr-nodate   { border-left-color: var(--violet-alerte); }
+
+.proch-txt { flex: 1; display: grid; gap: 3px; min-width: 0; }
+.proch-titre {
+  color: var(--text); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.proch-meta { color: var(--muted); font-size: .8rem; }
+.proch-ecart {
+  flex-shrink: 0; color: var(--muted);
+  font-size: .8rem; font-weight: 700; text-align: right;
+}
+.proch-ecart.pe-late   { color: var(--red); }
+.proch-ecart.pe-nodate { color: var(--violet-alerte); }
+.proch-pied { text-align: right; margin-top: 6px; }
+.proch-pied .link { padding: 4px 0; }
+
+/* ── 4) Les quatre tuiles chiffrées ────────────────────────── */
+/* iPhone : une seule colonne (elles passent sur une ligne à ≥1100px) */
+.tuiles { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.tuile {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  box-shadow: var(--shadow);
+}
+.tuile-num { color: var(--text); font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.tuile-lbl { color: var(--muted); font-size: .76rem; text-align: center; }
+.tuile-alerte .tuile-num { color: var(--red); }
+
 /* ── Onglet Activités ──────────────────────────────────────── */
 .act-head { display: flex; align-items: center; gap: 12px; }
 .act-h {
@@ -776,7 +924,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
   .page > .create-layout,
   .page > .act-head,
   .page > .act-list,
+  .page > .filtre-row,
+  .page > .frise,
+  .page > .proch,
+  .page > .tuiles,
   .page > .vehicle-summary { grid-column: 1 / -1; }
+
+  /* Page Activités : les 4 tuiles sur une seule ligne, et la frise
+     tient sans défilement horizontal. */
+  .tuiles { grid-template-columns: repeat(4, 1fr); }
+  .frise-inner { min-width: 0; }
 
   /* Le panneau de création s'élargit pour tenir ses 2 colonnes */
   .cp-panel { max-width: 1000px; }
