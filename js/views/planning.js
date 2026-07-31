@@ -5,7 +5,10 @@
 
 import * as db from '../db.js';
 import { OT_TYPES, OT_STATUS, label } from '../constants.js';
-import { $$, esc, fmtDate, todayISO, dueStatus, dueText, otLate, vehicleAvatar } from '../ui.js';
+import {
+  $$, esc, fmtDate, todayISO, dueStatus, dueText, otLate, vehicleAvatar,
+  lienActivite, ORIGINE_PLANNING,
+} from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
 // "dans 3 j", "aujourd'hui", "il y a 5 j"
@@ -64,7 +67,7 @@ export async function renderPlanning(root) {
   const otCard = w => {
     const late = otLate(w, today);
     return `
-    <a class="card plan-item ${late ? 'plan-late' : ''}" href="#/ot/${w.id}">
+    <a class="card plan-item ${late ? 'plan-late' : ''}" href="${esc(lienActivite(w.id, ORIGINE_PLANNING))}">
       <div class="row">
         <span class="badge type-${w.type}">${esc(label(OT_TYPES, w.type))}</span>
         <span class="chip st-${w.statut}">${esc(label(OT_STATUS, w.statut))}</span>

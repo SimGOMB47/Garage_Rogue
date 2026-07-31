@@ -19,6 +19,7 @@ import {
 import {
   $, $$, esc, fmtMoney, fmtKm, fmtDate, todayISO, otLate, otSansDate,
   formModal, confirmModal, toast, safe, dueStatus, dueText, lightbox,
+  lienActivite, origineVehicule,
 } from '../ui.js';
 
 // Les onglets de la page véhicule
@@ -547,8 +548,10 @@ async function createForm(host, v, onSaved) {
 function otCard(ot) {
   const cost = (ot.work_order_parts || [])
     .reduce((s, p) => s + Number(p.price) * Number(p.qty), 0);
+  // Depuis l'Historique, on revient sur l'Historique
+  const lien = lienActivite(ot.id, origineVehicule(ot.vehicle_id, 'histo'));
   return `
-    <a class="card histo-card" href="#/ot/${ot.id}">
+    <a class="card histo-card" href="${esc(lien)}">
       <div class="row">
         <span class="badge type-${ot.type}">${esc(label(OT_TYPES, ot.type))}</span>
         <span class="chip st-${ot.statut}">${esc(label(OT_STATUS, ot.statut))}</span>
@@ -593,8 +596,10 @@ function actRow(ot, seNames, today) {
   // ne peut pas s'appliquer, il n'y a rien à comparer.
   const etat = sansDate ? 'nodate' : late ? 'late' : ot.statut;
   const se = ot.sous_ensemble_id ? seNames.get(ot.sous_ensemble_id) : null;
+  // On repart sur l'onglet Activités du même véhicule
+  const lien = lienActivite(ot.id, origineVehicule(ot.vehicle_id, 'act'));
   return `
-    <a class="card act-row act-${esc(etat)}" href="#/ot/${ot.id}">
+    <a class="card act-row act-${esc(etat)}" href="${esc(lien)}">
       <div class="act-l1">
         <span class="act-intitule">${esc(ot.subsystem || 'Sans intitulé')}</span>
         ${sansDate ? '<span class="act-sansdate">Date manquante</span>'

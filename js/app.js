@@ -35,10 +35,16 @@ async function route() {
 
   autoGenerate(); // échéances → activités automatiques (en arrière-plan)
 
-  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  // L'adresse peut porter des paramètres après un "?" :
+  //   #/ot/<id>?o=act   → o = d'où l'on vient (bouton retour)
+  const brut = location.hash.replace(/^#\/?/, '');
+  const [chemin, requete] = brut.split('?');
+  const parts = chemin.split('/').filter(Boolean);
+  const params = new URLSearchParams(requete || '');
+
   try {
     if (parts[0] === 'vehicle' && parts[1]) await renderVehicle(app, parts[1], parts[2]);
-    else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1], parts[2]);
+    else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1], parts[2], params.get('o'));
     else if (parts[0] === 'vehicles') await renderVehicles(app);
     else if (parts[0] === 'new') await renderActivityWizard(app);
     else if (parts[0] === 'planning') await renderPlanning(app);

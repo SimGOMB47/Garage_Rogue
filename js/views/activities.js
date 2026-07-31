@@ -18,6 +18,7 @@ import * as db from '../db.js';
 import { supabase } from '../db.js';
 import {
   $, $$, esc, fmtMoney, fmtDate, todayISO, otLate, otSansDate, safe,
+  lienActivite, ORIGINE_ACTIVITES,
 } from '../ui.js';
 import { bottomNav } from '../components/nav.js';
 
@@ -182,7 +183,7 @@ function friseHTML(vehicles, ots, today) {
                 const d = Math.min(100, pct(o.fin) + (100 / total));  // fin incluse
                 return `
                 <a class="frise-barre fb-${esc(o.etat)}"
-                   href="#/ot/${o.id}"
+                   href="${esc(lienActivite(o.id, ORIGINE_ACTIVITES))}"
                    style="left:${g.toFixed(2)}%;width:${Math.max(d - g, 0).toFixed(2)}%"
                    title="${esc(o.titre)} — du ${esc(fmtDate(o.debut))} au ${esc(fmtDate(o.fin))}">
                   <span class="fb-txt">${esc(o.titre)}</span>
@@ -257,7 +258,7 @@ function prochainesHTML(ots, today, vNoms, seNoms) {
     const etat = etatDe(ot, today);
     const se = ot.sous_ensemble_id ? seNoms.get(ot.sous_ensemble_id) : null;
     return `
-      <a class="proch-row pr-${esc(etat)}" href="#/ot/${ot.id}">
+      <a class="proch-row pr-${esc(etat)}" href="${esc(lienActivite(ot.id, ORIGINE_ACTIVITES))}">
         <span class="proch-txt">
           <span class="proch-titre">${esc(ot.subsystem || 'Sans intitulé')}</span>
           <span class="proch-meta">${esc(vNoms.get(ot.vehicle_id) || '?')}${se ? ' · ' + esc(se) : ''}</span>

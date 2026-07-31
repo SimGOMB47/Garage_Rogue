@@ -4,11 +4,14 @@ import * as db from '../db.js';
 import { OT_TYPES, OT_STATUS, label, otFields, verifierPeriode } from '../constants.js';
 import {
   $, $$, esc, fmtMoney, fmtKm, fmtDate,
-  formModal, confirmModal, toast, safe, lightbox,
+  formModal, confirmModal, toast, safe, lightbox, lienRetour,
 } from '../ui.js';
 
-export async function renderWorkOrder(root, id, mode) {
+// `origine` dit d'où l'on vient : elle est lue dans l'adresse par le
+// routeur (voir app.js) et sert au bouton retour.
+export async function renderWorkOrder(root, id, mode, origine = null) {
   const isNew = mode === 'new'; // arrivée depuis l'assistant de création
+  const retour = lienRetour(origine);
   const ot = await db.getWorkOrder(id);
   const parts = (ot.work_order_parts || [])
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -16,11 +19,13 @@ export async function renderWorkOrder(root, id, mode) {
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const urls = await db.photoUrls(photos);
   const total = parts.reduce((s, p) => s + Number(p.price) * Number(p.qty), 0);
-  const rerender = () => renderWorkOrder(root, id, mode);
+  // On repasse `origine` : sinon le bouton retour se réinitialiserait
+  // après un enregistrement ou un changement de statut.
+  const rerender = () => renderWorkOrder(root, id, mode, origine);
 
   root.innerHTML = `
     <header class="topbar">
-      <a class="icon-btn" href="#/vehicle/${ot.vehicle_id}/histo" title="Retour">←</a>
+      <a class="icon-btn" href="${esc(retour)}" title="Retour">←</a>
       <h1 class="grow">${isNew ? 'Nouvelle activité'
         : ot.date_debut ? `Activité du ${fmtDate(ot.date_debut)}` : 'Activité (date manquante)'}</h1>
       <button class="icon-btn" id="edit-ot" title="Modifier l’OT">✎</button>

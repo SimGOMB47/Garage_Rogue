@@ -104,6 +104,32 @@ export function otLate(ot, today = todayISO()) {
 // le cas des activités créées avant la refonte GMAO.
 export const otSansDate = ot => !ot?.date_fin;
 
+// ── D'où vient-on ? (bouton retour d'une fiche d'activité) ──────
+//
+// L'origine voyage dans l'ADRESSE : #/ot/<id>?o=…
+// Volontairement PAS dans l'historique du navigateur : recharger la
+// page ou rouvrir l'app depuis l'écran d'accueil de l'iPhone vide
+// l'historique, et le bouton retour ne ferait alors plus rien.
+
+export const ORIGINE_ACTIVITES = 'act';
+export const ORIGINE_PLANNING  = 'plan';
+// Onglet d'un véhicule : on retient AUSSI l'onglet exact
+export const origineVehicule = (vehicleId, onglet) => `veh:${vehicleId}:${onglet}`;
+
+// Adresse d'une fiche d'activité, avec la trace d'où l'on vient
+export const lienActivite = (id, origine) =>
+  `#/ot/${id}${origine ? `?o=${encodeURIComponent(origine)}` : ''}`;
+
+// Adresse de retour correspondante. Origine absente ou inconnue
+// (adresse ouverte directement, app relancée) : page Activités.
+export function lienRetour(origine) {
+  if (origine === ORIGINE_ACTIVITES) return '#/';
+  if (origine === ORIGINE_PLANNING)  return '#/planning';
+  const m = /^veh:([^:]+):([a-z]+)$/.exec(origine || '');
+  if (m) return `#/vehicle/${m[1]}/${m[2]}`;
+  return '#/';
+}
+
 // ── Modales ─────────────────────────────────────────────────────
 let modalOpenCount = 0;
 export const isModalOpen = () => modalOpenCount > 0;
