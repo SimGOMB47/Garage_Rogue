@@ -592,6 +592,163 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 }
 
 /* ════════════════════════════════════════════════════════════
+   PAGE « CALENDRIER » — année civile entière, 12 colonnes
+   SEULE page sur fond CLAIR : c'est volontaire, une grille aussi
+   dense se lit mieux ainsi. La barre du bas, elle, reste sombre.
+   ════════════════════════════════════════════════════════════ */
+
+/* Couleurs propres au calendrier (différentes du reste de l'app) */
+.cal-page {
+  --cal-cloture:  #2E9E6B;
+  --cal-en_cours: #E8A100;
+  --cal-late:     #D93B3B;
+  --cal-planifie: #7C8994;
+  --cal-fond:     #E4E5E7;
+  --cal-colonne:  #F4F5F6;
+  --cal-we:       #DCDEE0;
+  --cal-texte:    #33373A;
+  --cal-semaine:  #A67C00;   /* jaune foncé, lisible sur fond clair */
+
+  background: var(--cal-fond);
+  color: var(--cal-texte);
+}
+
+/* Le calendrier a besoin de toute la largeur de l'écran : cette page
+   sort de la largeur maximale imposée aux autres. Le fond clair est
+   posé sur #app pour couvrir toute la hauteur, y compris sous une
+   page courte ; la barre du haut garde son fond sombre. */
+#app:has(.cal-page) { max-width: 100%; background: #E4E5E7; }
+
+/* Cette page reste sur UNE colonne, même sur grand écran, où les
+   autres pages passent en deux colonnes. Deux classes : la règle
+   l'emporte sur celle de .page plus bas dans le fichier. */
+.page.cal-page { grid-template-columns: 1fr; }
+
+/* ── Barre du haut de la page : année + véhicules ───────────── */
+.cal-barre {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.cal-annee { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.cal-fleche {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: #fff; border: 1px solid #C9CCCF; color: var(--cal-texte);
+  font-size: 1.3rem; line-height: 1; cursor: pointer;
+}
+.cal-fleche:active { background: var(--cal-we); }
+.cal-an { font-size: 1.15rem; font-weight: 800; min-width: 60px; text-align: center; }
+
+.cal-vehicules {
+  display: flex; gap: 8px; flex: 1;
+  overflow-x: auto; scrollbar-width: none;
+}
+.cal-vehicules::-webkit-scrollbar { display: none; }
+.cal-chip {
+  flex: 0 0 auto;
+  background: #fff; color: #5A6066;
+  border: 1px solid #C9CCCF; border-radius: 999px;
+  padding: 7px 14px; font-size: .84rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.cal-chip.actif {
+  background: #17191B; color: var(--accent); border-color: #17191B;
+}
+.cal-vide { color: #6B7176; font-size: .88rem; }
+
+.cal-legende {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  color: #5A6066; font-size: .76rem;
+}
+.cal-legende span { display: flex; align-items: center; gap: 6px; }
+.cl { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.cl-planifie { background: var(--cal-planifie); }
+.cl-en_cours { background: var(--cal-en_cours); }
+.cl-late     { background: var(--cal-late); }
+.cl-cloture  { background: var(--cal-cloture); }
+.cl-today    { background: #fff; box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* ── La grille des 12 mois ──────────────────────────────────── */
+.cal-grille {
+  display: flex; gap: 6px; align-items: flex-start;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+.cal-mois {
+  flex: 0 0 100%;              /* iPhone : un mois plein écran */
+  scroll-snap-align: start;
+  background: var(--cal-colonne);
+  border-radius: 8px; overflow: hidden;
+}
+.cal-mois-h {
+  margin: 0; padding: 7px 8px;
+  background: #17191B; color: var(--accent);
+  font-size: .78rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em; text-align: center;
+}
+.cal-jours { display: flex; flex-direction: column; }
+
+/* ── Une ligne de jour ──────────────────────────────────────── */
+.cal-jour {
+  display: flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 6px;          /* confortable au doigt */
+  font-size: .72rem; color: var(--cal-texte);
+  border-bottom: 1px solid rgba(0, 0, 0, .05);
+  text-decoration: none;
+}
+.cal-jour:last-child { border-bottom: none; }
+.cal-we { background: var(--cal-we); }
+
+.cal-lettre {
+  width: 18px; flex-shrink: 0;
+  font-weight: 700; color: #6B7176;
+}
+.cal-num { width: 18px; flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.cal-titre {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: .68rem;
+}
+/* Le numéro de semaine, uniquement sur les lundis, collé à droite */
+.cal-sem {
+  margin-left: auto; flex-shrink: 0;
+  color: var(--cal-semaine); font-weight: 800; font-size: .66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Jours occupés : la ligne entière prend la couleur de l'activité */
+.cj-cloture  { background: var(--cal-cloture); }
+.cj-en_cours { background: var(--cal-en_cours); }
+.cj-late     { background: var(--cal-late); }
+.cj-planifie { background: var(--cal-planifie); }
+/* Deux activités le même jour : la ligne est coupée en deux moitiés */
+.cal-double { background: linear-gradient(to right, var(--c1) 50%, var(--c2) 50%); }
+
+.cal-occupe,
+.cal-occupe .cal-lettre { color: #fff; }
+.cal-occupe .cal-sem { color: #fff; }
+
+/* Aujourd'hui : liseré jaune, posé en incrustation pour ne pas
+   décaler la grille d'un pixel. */
+.cal-today { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; position: relative; }
+
+/* ── Densité selon la largeur ───────────────────────────────── */
+/* iPhone (< 1100px) : un seul mois, donc la place d'afficher les
+   intitulés. Au-delà, 12 colonnes : on les cache… */
+@media (min-width: 1100px) {
+  .cal-grille { scroll-snap-type: none; overflow-x: visible; }
+  .cal-mois { flex: 1 1 0; min-width: 0; }
+  .cal-jour { height: 14px; gap: 4px; font-size: .64rem; padding: 0 4px; }
+  .cal-lettre { width: 15px; }
+  .cal-num { width: 15px; }
+  .cal-titre { display: none; }
+  .cal-sem { font-size: .6rem; }
+}
+/* … et on les remet dès qu'il y a vraiment la place. */
+@media (min-width: 1600px) {
+  .cal-jour { height: 14px; }
+  .cal-titre { display: block; }
+}
+
+/* ════════════════════════════════════════════════════════════
    PAGE « ACTIVITÉS » (écran d'accueil, tous véhicules)
    ════════════════════════════════════════════════════════════ */
 

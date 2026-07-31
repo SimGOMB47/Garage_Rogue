@@ -5,11 +5,12 @@
 
 export function bottomNav(active) {
   const items = [
-    ['home',      '#/',          '🔧', 'Activités'],
-    ['vehicles',  '#/vehicles',  '🚗', 'Véhicules'],
-    ['create',    '#/new',       '＋', 'Créer'],
-    ['planning',  '#/planning',  '📅', 'Planning'],
-    ['dashboard', '#/dashboard', '📊', 'Bord'],
+    ['home',       '#/',           '🔧', 'Activités'],
+    ['calendrier', '#/calendrier', '📆', 'Calendrier'],
+    ['vehicles',   '#/vehicles',   '🚗', 'Véhicules'],
+    ['create',     '#/new',        '＋', 'Créer'],
+    ['planning',   '#/planning',   '📅', 'Planning'],
+    ['dashboard',  '#/dashboard',  '📊', 'Bord'],
   ];
   return `
     <nav class="bottom-nav">

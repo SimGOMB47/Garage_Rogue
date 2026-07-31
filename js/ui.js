@@ -111,8 +111,9 @@ export const otSansDate = ot => !ot?.date_fin;
 // page ou rouvrir l'app depuis l'écran d'accueil de l'iPhone vide
 // l'historique, et le bouton retour ne ferait alors plus rien.
 
-export const ORIGINE_ACTIVITES = 'act';
-export const ORIGINE_PLANNING  = 'plan';
+export const ORIGINE_ACTIVITES  = 'act';
+export const ORIGINE_PLANNING   = 'plan';
+export const ORIGINE_CALENDRIER = 'cal';
 // Onglet d'un véhicule : on retient AUSSI l'onglet exact
 export const origineVehicule = (vehicleId, onglet) => `veh:${vehicleId}:${onglet}`;
 
@@ -123,8 +124,9 @@ export const lienActivite = (id, origine) =>
 // Adresse de retour correspondante. Origine absente ou inconnue
 // (adresse ouverte directement, app relancée) : page Activités.
 export function lienRetour(origine) {
-  if (origine === ORIGINE_ACTIVITES) return '#/';
-  if (origine === ORIGINE_PLANNING)  return '#/planning';
+  if (origine === ORIGINE_ACTIVITES)  return '#/';
+  if (origine === ORIGINE_PLANNING)   return '#/planning';
+  if (origine === ORIGINE_CALENDRIER) return '#/calendrier';
   const m = /^veh:([^:]+):([a-z]+)$/.exec(origine || '');
   if (m) return `#/vehicle/${m[1]}/${m[2]}`;
   return '#/';

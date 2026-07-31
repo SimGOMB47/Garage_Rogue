@@ -6,6 +6,7 @@ import { renderLogin, renderNotMember } from './auth.js';
 import { esc, isModalOpen, toast } from './ui.js';
 import { setupAutoUpdate } from './update.js';
 import { renderActivities } from './views/activities.js';
+import { renderCalendar } from './views/calendar.js';
 import { renderVehicles } from './views/vehicles.js';
 import { renderVehicle } from './views/vehicle.js';
 import { renderWorkOrder } from './views/workorder.js';
@@ -47,6 +48,7 @@ async function route() {
     else if (parts[0] === 'ot' && parts[1]) await renderWorkOrder(app, parts[1], parts[2], params.get('o'));
     else if (parts[0] === 'vehicles') await renderVehicles(app);
     else if (parts[0] === 'new') await renderActivityWizard(app);
+    else if (parts[0] === 'calendrier') await renderCalendar(app);
     else if (parts[0] === 'planning') await renderPlanning(app);
     else if (parts[0] === 'dashboard') await renderDashboard(app);
     else await renderActivities(app);   // écran d'accueil
